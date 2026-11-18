@@ -76,8 +76,8 @@ def patch(s):
             std::uint64_t zerosBroken=0,zerosClean=0,blocks=0;
             for(int i=0;i<160;++i){
                 EventList midi;
-                if(i%13==0)midi.addEvent(note(true,60,i%256));
-                if(i%13==8)midi.addEvent(note(false,60,i%256));
+                if(i%13==0){auto ev=note(true,60,i%256);midi.addEvent(ev);}
+                if(i%13==8){auto ev=note(false,60,i%256);midi.addEvent(ev);}
                 const bool okA=broken.process(i%13==0?&midi:nullptr);
                 const bool okB=clean.process();
                 check(okA&&okB,"P026 concurrent actual COM VST3 realtime callbacks accepted");
