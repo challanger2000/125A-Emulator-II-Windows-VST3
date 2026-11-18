@@ -5,11 +5,13 @@ base=Path(__file__).resolve().parents[1]/"upstream/eii-emu/src/vst3"
 e=(base/"plugin_engine.h").read_text(encoding="utf-8")
 c=(base/"eii_vst3.cpp").read_text(encoding="utf-8")
 s=(base/"plugin_state.h").read_text(encoding="utf-8")
+ed=(base/"plugin_editor.h").read_text(encoding="utf-8")
 def need(t,v):
     if v not in t:raise AssertionError("P017 missing: "+v)
 for v in (
     'std::shared_ptr<const std::vector<std::uint8_t>> embeddedHdd_,projectHdd_;',
     'std::future<bool> captureHddForProject(){',
+    'bool projectNeedsHddCapture()const noexcept{',
     'machine_->hardDisk->phase!=HardDisk::Free',
     'auto copy=std::make_shared<const std::vector<std::uint8_t>>(image);',
     '{std::lock_guard l(projectMediaMutex_);projectHdd_=copy;',
@@ -40,6 +42,8 @@ for v in (
     'Corrupt pending-HDD project marker',
 ):
     need(s,v)
+need(ed,'backend_.engine().projectNeedsHddCapture()')
+need(ed,'UNSAVED/INCOMPLETE - finish HDD access and save song again')
 a=e[e.index('std::future<bool> captureHddForProject()'):
     e.index('    // VST3 setState:',e.index('std::future<bool> captureHddForProject()'))]
 assert a.index('phase!=HardDisk::Free')<a.index('make_shared<const std::vector<std::uint8_t>>(image)')
