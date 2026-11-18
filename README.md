@@ -51,3 +51,7 @@ The single self-contained Windows plugin installs under `C:\Program Files\Common
 ## P007: Original maximum sampling capacity
 
 Removed the temporary 10-second WAV limit. Single original EII performance bank accepts up to **17.6 seconds**, subject to actual firmware-reported free sample RAM. The EII+ 1 MiB upgrade consists of two separate 512 KiB banks, not a 35-second continuous voice. The unchanged original firmware controls recording and may fill memory before the WAV has finished. P007 explicitly rejects early Sample is good instead of silently saving a truncated voice; true natural auto-completion near the WAV end is supported. File-size guard remains 64 MiB. Menu wording: **Import WAV...** and **Import abbrechen**. Original-ROM/OS and host recall tests remain required before product release.
+
+## P008 — Import WAV without manual disk swaps; Eject safe for project bank
+
+The original EII RAM bank is retained in DAW project media when Eject removes only the floppy. When WAV import needs firmware SAMPLE and original DISK7, the engine automatically mounts a **private writable memory copy** of the bundled original OS3.1 disk; no change is made to the original OS or user's `.EII` bank. On successful SAVE BANK the previous floppy is restored. New different soundbank mounts invalidate stale embedded bank snapshots. Fault recovery is conservative: while firmware is in SAMPLE mode an unsafe hot-swap is avoided. This build needs the owner's final Studio One host verification; see docs/P008-UX-SAFETY.md.
