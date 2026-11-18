@@ -8,7 +8,7 @@ header=(root/"upstream/eii-emu/src/125a_preboot_event_policy.h").read_text(encod
 m=(root/"upstream/eii-emu/src/machine.cpp").read_text(encoding="utf-8")
 for expected in (
     '#include "125a_preboot_event_policy.h"',
-    'void advanceAutonomousBoot(){' if False else 'bool advanceAutonomousBoot(){',
+    'bool advanceAutonomousBoot(){',
     'switch(portable::prebootAction(ev->kind))',
     'case portable::PrebootEventAction::ApplyControl:',
     'applyEvent(*ev);break;',
