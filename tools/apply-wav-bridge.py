@@ -28,6 +28,8 @@ def main():
     if sha != UPSTREAM_SHA:
         raise RuntimeError(f"Wrong upstream checkout {sha}; wanted {UPSTREAM_SHA}")
     old = EDITOR.read_text(encoding="utf-8")
+    if "case 740:" in old or "case 741:" in old:
+        raise RuntimeError("125A WAV menu command ID conflicts with upstream")
     new = replace_one(
         old,
         '#include "vst3/plugin_engine.h"\n',
@@ -37,14 +39,14 @@ def main():
     new = replace_one(
         new,
         '        AppendMenuW(menu,check(s.directImageWrites),30,L"Direct image writes (next mount / boot)");',
-        '        AppendMenuW(menu,MF_STRING,70,L"125A: WAV als SAMPLE-Eingang vorbereiten...");\n'
-        '        AppendMenuW(menu,MF_STRING,71,L"125A: WAV-Sample-Eingang deaktivieren");\n'
+        '        AppendMenuW(menu,MF_STRING,740,L"125A: WAV als SAMPLE-Eingang vorbereiten...");\n'
+        '        AppendMenuW(menu,MF_STRING,741,L"125A: WAV-Sample-Eingang deaktivieren");\n'
         '        AppendMenuW(menu,check(s.directImageWrites),30,L"Direct image writes (next mount / boot)");',
         "menu",
     )
     # These operations occur on the GUI/control thread. The new immutable
     # SampleInputSource is published by PluginEngine::post to the machine owner.
-    command = r'''        case 70:{
+    command = r'''        case 740:{
             std::filesystem::path file;
             if(!openFile(file,L"WAV files (*.wav)\0*.wav\0\0",
                          L"Select WAV for the original EII SAMPLE input"))break;
@@ -60,7 +62,7 @@ def main():
                 ask(wide(ex.what()),L"125A WAV import rejected",MB_ICONERROR);
             }
             break;}
-        case 71:e.sampleSource(nullptr);break;
+        case 741:e.sampleSource(nullptr);break;
 '''
     new = replace_one(new, '        case 10:insertFloppy(false);break;',
                       command + '        case 10:insertFloppy(false);break;', "commands")

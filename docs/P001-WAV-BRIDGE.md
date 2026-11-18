@@ -30,3 +30,7 @@ The Vintage Sampler III D0 owner-approved architecture provides a firmware-media
 ## Rights, performance and QA
 
 The upstream is GPL-3.0, the VST3 SDK subset has its own license. The 125A extension is GPL-3.0; retain original copyright/contributor attributions. No E-mu owned firmware/ROM/media in public source, CI, or package. File I/O/decoding/memory allocation only on GUI/control thread; waveform data immutable for machine-owner access. Decoder limit 64 MiB is a developer memory-budget cap, not a claim about EII hardware capacity. Anti-phase stereo sum can cancel; this is an intentional first-pass downmix and must be user-selectable or improved only with explicit reference/acceptance.
+
+## Windows compiler diagnostic (2026-11-18)
+
+Initial Windows CI run #44275768282 reproduced C++ duplicate switch cases: our WAV menu IDs 70/71 collided with the upstream safety-margin choices. The native decoder suite still passed. The correction reserves IDs 740/741, adds an upstream conflict preflight, and preserves the original 70..73 controls. The failed run is retained as RED evidence; Windows GREEN and firmware/DAW sound evidence require separate successful runs.

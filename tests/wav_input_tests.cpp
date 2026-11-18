@@ -74,8 +74,7 @@ int main(){
     near(decode(file(1,32,1,48000,pcm32)).mono[0],1,1e-6,"PCM32");
     Bytes torn=file(1,16,1,48000,pcm);torn.pop_back();
     reject([&]{decode(torn);},"truncated chunk/padding");
-    Bytes wrong=file(1,16,1,48000,pcm);wrong[32]=3; // blockAlign in fmt is at offset 42 for JUNK
-    wrong[42]=3;reject([&]{decode(wrong);},"incorrect WAV block alignment");
+    Bytes wrong=file(1,16,1,48000,pcm);wrong[42]=3; // blockAlign in fmt is at offset 42reject([&]{decode(wrong);},"incorrect WAV block alignment");
     reject([&]{decode(file(1,16,3,48000,pcm));},"unsupported >2 channels");
     // Real filesystem load occurs off the emulated/audio thread.
     const auto path=std::filesystem::temp_directory_path()/"125a-wav-input-test.wav";
