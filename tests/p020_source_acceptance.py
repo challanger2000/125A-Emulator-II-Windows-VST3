@@ -12,7 +12,7 @@ for v in (
     "bootClock_.begin(bootNowMs,machine_->ticks,",
     "s.boot=bootClock_.observe(",
     "tickOf(hostTarget_.load(std::memory_order_acquire))",
-    "presetDisplayed(),!next.floppy.idle||!next.hdd.idle,halted_",
+    "originalPlayable(),!next.floppy.idle||!next.hdd.idle,halted_",
     "originalBootBatch_.quantum(dsp,urgent,unsafeFast)",
 ):
     assert v in engine, "P020 missing boot owner telemetry "+v
