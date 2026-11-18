@@ -101,6 +101,10 @@ jobs:
         run: |
           g++ -std=c++23 -O3 -Wall -Wextra -Werror -pedantic -I src tests/p019_boot_batch_tests.cpp -o /tmp/p019_boot_batch_tests
           /tmp/p019_boot_batch_tests
+      - name: Test actual original Z80/SAR/DRAM run-segment invariance
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/p019_machine_segment_tests.cpp -o /tmp/p019_machine_segment_tests
+          /tmp/p019_machine_segment_tests
       - name: Compile bundled ROM/OS path regression
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/bundled_resources_tests.cpp -o /tmp/bundled_resources_tests
