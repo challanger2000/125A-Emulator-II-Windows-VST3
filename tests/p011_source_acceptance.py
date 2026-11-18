@@ -20,7 +20,10 @@ for v in (
     "beginWavCancel(action.error?",
 ):
     need(v)
-assert s.index("wavStep();\n                cancelWavStep();\n                bankStep();")>=0
+if "void observeMediaReads()" in s:
+    assert s.index("wavStep();\n                cancelWavStep();")<s.index("observeMediaReads();\n                bankStep();")
+else:
+    assert s.index("wavStep();\n                cancelWavStep();\n                bankStep();")>=0
 b=s[s.index("void cancelAutoWav()"):s.index("    // UI file decoding is complete",s.index("void cancelAutoWav()"))] if False else s[s.index("void cancelAutoWav()"):s.index("    void ",s.index("void cancelAutoWav()")+5)]
 assert "bankError(" not in b, "Cancel must not terminate an active DISK7 write"
 assert "beginWavCancel" in b
