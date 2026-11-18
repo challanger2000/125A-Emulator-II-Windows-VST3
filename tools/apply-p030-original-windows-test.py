@@ -107,8 +107,8 @@ BLOCK=r'''
                 PcmP030 result;
                 for(int b=0;b<330;++b){
                     EventList events;
-                    if(b==0)events.addEvent(note(true,60,0));
-                    if(b==200)events.addEvent(note(false,60,0));
+                    if(b==0){auto on=note(true,60,0);events.addEvent(on);}
+                    if(b==200){auto off=note(false,60,0);events.addEvent(off);}
                     requireP030(in.process(b==0||b==200?&events:nullptr),
                                "actual Windows VST3 MIDI/PCM callback rejected");
                     for(int i=0;i<in.block;++i){
