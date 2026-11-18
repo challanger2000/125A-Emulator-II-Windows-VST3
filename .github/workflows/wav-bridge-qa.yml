@@ -154,6 +154,18 @@ jobs:
       - name: Compile original EII SAR/Z80/DRAM integration
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/wav_sar_machine_tests.cpp -o /tmp/wav_sar_machine_tests
+      - name: Build private original-ROM first-Pxx/PCM test runner (NO private media in CI)
+        run: |
+          mkdir -p artifact-private-boot-probe
+          g++ -std=c++23 -O3 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/p023_original_rom_boot_probe.cpp -o artifact-private-boot-probe/original_eii_private_boot_probe
+          test -x artifact-private-boot-probe/original_eii_private_boot_probe
+          ! find artifact-private-boot-probe -type f -name '*.bin' -o -name '*.emuiifd' | grep -q .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: P023-Linux-Original-Firmware-Private-Boot-Probe-NO-ROM
+          path: artifact-private-boot-probe/
+          if-no-files-found: error
+          retention-days: 2
       - name: Assert real SAR/DRAM PCM against silence negative control
         run: /tmp/wav_sar_machine_tests
 
