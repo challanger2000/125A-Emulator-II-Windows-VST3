@@ -5,6 +5,9 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 SRC=ROOT/"upstream/eii-emu/tools/vst3_host_test.cpp"
 def patch(s):
+    include='#include "125a_portable_state.h"'
+    if s.count(include)!=1:raise RuntimeError("P017 host codec include anchor missing")
+    s=s.replace(include,include+'\n#include "125a_portable_hdd.h"',1)
     a='''        check(first.setState(full),"P014 real VST3 accepts later committed bank");
         check(first.getState()==full,"P014 committed bank clears pending warning");
         first.shutdown();module.reset();'''
