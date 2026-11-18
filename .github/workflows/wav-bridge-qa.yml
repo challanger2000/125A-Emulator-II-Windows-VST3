@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118', 'develop/p016-bounded-silence-rebase-20261118', 'develop/p017-portable-hdd-song-state-20261118', 'develop/p018-wav-c3-midi-keyboard-20261118', 'develop/p019-original-boot-batch-scheduling-20261118']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118', 'develop/p016-bounded-silence-rebase-20261118', 'develop/p017-portable-hdd-song-state-20261118', 'develop/p018-wav-c3-midi-keyboard-20261118', 'develop/p019-original-boot-batch-scheduling-20261118', 'develop/p020-boot-clock-diagnostics-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -47,6 +47,8 @@ jobs:
           python3 tools/apply-p018-c3-keyboard.py
           python3 tools/apply-p019-original-boot-batching.py --verify
           python3 tools/apply-p019-original-boot-batching.py
+          python3 tools/apply-p020-boot-clock-diagnostics.py --verify
+          python3 tools/apply-p020-boot-clock-diagnostics.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
           python3 tests/p011_source_acceptance.py
@@ -58,6 +60,7 @@ jobs:
           python3 tests/p017_source_acceptance.py
           python3 tests/p018_source_acceptance.py
           python3 tests/p019_source_acceptance.py
+          python3 tests/p020_source_acceptance.py
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
@@ -105,6 +108,10 @@ jobs:
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/p019_machine_segment_tests.cpp -o /tmp/p019_machine_segment_tests
           /tmp/p019_machine_segment_tests
+      - name: Test original firmware stopwatch, paused DAW, disk progress and real first Pxx
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/p020_boot_clock_tests.cpp -o /tmp/p020_boot_clock_tests
+          /tmp/p020_boot_clock_tests
       - name: Compile bundled ROM/OS path regression
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/bundled_resources_tests.cpp -o /tmp/bundled_resources_tests
@@ -206,6 +213,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P019 first original Pxx boot scheduler preflight failed" }
           python tools/apply-p019-original-boot-batching.py
           if ($LASTEXITCODE -ne 0) { throw "P019 original CPU batching integration failed" }
+          python tools/apply-p020-boot-clock-diagnostics.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P020 original boot clock source preflight failed" }
+          python tools/apply-p020-boot-clock-diagnostics.py
+          if ($LASTEXITCODE -ne 0) { throw "P020 original boot clock integration failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
@@ -228,6 +239,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P018 original MIDI C3 source integration failed" }
           python tests/p019_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P019 original EII boot batching source integration failed" }
+          python tests/p020_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P020 original DAW/CPU boot clock source integration failed" }
           python tools/apply-vst3-state-host-test.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
           python tools/apply-vst3-state-host-test.py
@@ -283,11 +296,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P019.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P020.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P019-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P020-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
