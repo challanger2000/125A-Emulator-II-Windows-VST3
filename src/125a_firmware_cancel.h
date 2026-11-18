@@ -32,8 +32,10 @@ public:
         const bool voice=contains(lcd0,"VOICE V")||contains(lcd1,"VOICE V");
         switch(phase_) {
         case CancelPhase::Settling:
-            if(playable){phase_=CancelPhase::Complete;return {CancelAction::None,nullptr,true,true};}
+            // Release any previous key and let original scanner debouncing
+            // settle before considering the Pxx screen a safe completion.
             if(tick<settleUntil_||!known)return {};
+            if(playable){phase_=CancelPhase::Complete;return {CancelAction::None,nullptr,true,true};}
             if(!sampleMode)return {}; // Wait while firmware loads SAMPLE, do not guess.
             if(good||voice)return startExit(tick);
             phase_=CancelPhase::StopHeld;settleUntil_=tick+hold;
