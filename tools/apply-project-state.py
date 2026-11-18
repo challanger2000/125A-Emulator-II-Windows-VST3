@@ -43,7 +43,7 @@ def main():
 
     eng=one(eng,
         '#include "125a_firmware_capture.h"',
-        '#include "125a_firmware_capture.h"\n#include "125a_bank_save.h"',
+        '#include "125a_firmware_capture.h"\n#include "125a_bank_save.h"\n#include "125a_portable_state.h"',
         "owner SAVE BANK include")
     eng=one(eng,
         '    std::string wavStatus_="Idle";',
@@ -129,8 +129,23 @@ def main():
                 if(embeddedBank_){
                     if(embeddedBank_->size()!=EmuiiImage::imageBytes)
                         throw std::runtime_error("Invalid embedded EII bank image length");
+                    // The saved state carries bank bytes only, not the OS.
+                    // Restore the OS from the locally installed owner disk.
+                    const auto path=!c.osImage.empty()?c.osImage:c.floppy;
+                    if(path.empty())throw std::runtime_error(
+                        "Original Emulator II OS3.1 disk required for project recall");
+                    host::FloppyImageBacking os(path,false);
+                    const auto original=os.image->bytes();
+                    if(original.size()<portable::bankDataOffset)
+                        throw std::runtime_error("Original EII OS region is unavailable");
+                    if(std::all_of(original.begin(),
+                                   original.begin()+portable::bankDataOffset,
+                                   [](std::uint8_t x){return x==0;}))
+                        throw std::runtime_error("Original EII OS region is empty");
+                    auto image=std::vector<std::uint8_t>(*embeddedBank_);
+                    std::copy_n(original.begin(),portable::bankDataOffset,image.begin());
                     freshFloppy=std::make_shared<host::FloppyImageBacking>(
-                        std::span<const std::uint8_t>(*embeddedBank_),
+                        std::span<const std::uint8_t>(image),
                         std::filesystem::path("125A-Project-Embedded.emuiifd"));
                 }else freshFloppy=std::make_shared<host::FloppyImageBacking>(c.floppy,c.directImageWrites,''',
         "embedded disk boot media")
@@ -182,7 +197,9 @@ def main():
         if(raw.size()!=EmuiiImage::imageBytes){bankError("Original bank has unexpected disk size");return;}
         // Publish only after original firmware completed the entire disk
         // and returned to performance mode. Project getState may read it.
-        auto copy=std::make_shared<const std::vector<std::uint8_t>>(raw.begin(),raw.end());
+        auto bankOnly=std::make_shared<std::vector<std::uint8_t>>(raw.begin(),raw.end());
+        std::fill_n(bankOnly->begin(),portable::bankDataOffset,0);
+        std::shared_ptr<const std::vector<std::uint8_t>> copy=bankOnly;
         {std::lock_guard l(projectMediaMutex_);projectMedia_=copy;}
         embeddedBank_=copy;
         bankRelease();

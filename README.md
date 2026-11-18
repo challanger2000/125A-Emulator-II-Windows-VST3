@@ -37,3 +37,7 @@ python3 tools/apply-project-state.py
 Then run the native/Windows CI tests in `.github/workflows/wav-bridge-qa.yml`. Windows uses `upstream/eii-emu/tools/build-win64-vst3.ps1` and the frozen LLVM-MinGW UCRT toolchain. Original private ROMs/disk are deliberately excluded from GitHub; the user-supplied firmware acceptance kit is built separately via `.github/workflows/firmware-local-qa-kit.yml`. For ongoing engineering, read the complete 125A [START-HERE](https://github.com/challanger2000/125A-Engineering/blob/main/START-HERE.md) and associated guardrails.
 
 **License:** The upstream source is GPL-3.0. Retain its notices and applicable source-distribution obligations for modified, publicly distributed VST3 binaries. Do not commit, upload or include proprietary E-mu ROMs, OS disks, user samples, or private test assets.
+
+## P005 research — OS-free, portable user-bank DAW state
+
+The experimental P005 branch makes project-state serialization omit the original E-mu system-area bytes: the fixed-size 573,440-byte image envelope now contains zeroes for the first 78,848 bytes and preserves the remaining 494,592 bank bytes exactly. On boot, the user's own OS3.1 disk is required at its configured osImage or floppy path; the OS region is reconstructed only inside the machine. Earlier P004 full-disk project states are still readable but sanitize when next saved. Missing original OS is an explicit boot error. Windows host, original-ROM playback and Studio One acceptance remain separate gates; P005 is not a release.

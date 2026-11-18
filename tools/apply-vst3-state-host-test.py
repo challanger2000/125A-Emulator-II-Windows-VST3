@@ -50,7 +50,7 @@ def main():
             check(second.setState(full),"P004 second VST3 instance restores same bank");
             check(second.getState()==full,"P004 second instance re-saves identical portable bank");
             check(first.getState()==full,"P004 multiple instances remain isolated");
-            auto otherDisk=disk;otherDisk[32244]^=0x41;
+            auto otherDisk=disk;otherDisk[bankDataOffset+32244]^=0x41;
             const auto distinct=encode(setting,otherDisk);
             check(second.setState(distinct),"P004 second VST3 instance accepts distinct sample bank");
             check(second.getState()==distinct&&first.getState()==full,

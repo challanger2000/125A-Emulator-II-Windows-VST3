@@ -21,3 +21,7 @@ The VST3 component now serializes its original settings and original-sized proje
 ## P004 complete private original-ROM acceptance
 
 Native original-ROM owner-engine end-to-end and loaded Windows COM state tests have now passed. See [P004-PRIVATE-FIRMWARE-PROJECT-ACCEPTANCE.md](P004-PRIVATE-FIRMWARE-PROJECT-ACCEPTANCE.md); last specific CI gate [44284743913](https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44284743913). Studio One user-host and final product QA still open.
+
+## P005: Remove original OS bytes from saved DAW projects
+
+Previous P004 host snapshots carried all 573,440 bytes, including the first 78,848 bytes of original E-mu OS data. This research branch protects the user by zeroing that system area at codec serialization and after original firmware DISK7 bank commit; it stores user-bank bytes exactly. During restore, the OS area is reconstructed from the original OS image at existing settings.osImage or settings.floppy on the local machine. Neither original ROMs nor OS images are included in public source or CI. The historical P004 full-disk state remains parseable, but re-saving canonicalizes it to OS-free format. A missing, empty or inaccessible OS area yields an explicit engine boot error. New test fixtures cover the OS exclusion and legacy state migration. Full private original-firmware boot and exact waveform regression must pass before merging P005.

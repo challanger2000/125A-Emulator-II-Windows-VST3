@@ -4,6 +4,7 @@
 // Binary envelope: magic(16), settingsLen(4), bankLen(4), fnv1a64(8),
 // original EIIVST3 settings bytes, complete 573440-byte EMUIIFD bank image.
 // No sample RAM shortcuts and no cryptographic authenticity claim.
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -14,6 +15,7 @@
 #include <vector>
 namespace eii::portable {
 inline constexpr std::size_t bankBytes=573440;
+inline constexpr std::size_t bankDataOffset=78848; // System area excluded from DAW projects
 inline constexpr std::size_t maxSettingsBytes=128u*1024u;
 inline constexpr std::size_t maxStateBytes=1024u*1024u;
 inline constexpr std::array<char,16> magic={'1','2','5','A','E','I','I','B','A','N','K','0','0','1','\r','\n'};
@@ -59,10 +61,14 @@ inline std::string encode(std::string_view settings,std::span<const std::uint8_t
     result.append(magic.data(),magic.size());
     write32(result,std::uint32_t(settings.size()));
     write32(result,std::uint32_t(bank.size()));
-    const auto combined=std::string(settings)+std::string(reinterpret_cast<const char*>(bank.data()),bank.size());
+    // Canonicalize all new project states to omit original E-mu OS bytes.
+    // Earlier P004 states containing full media remain readable by decode().
+    std::string userBank(reinterpret_cast<const char*>(bank.data()),bank.size());
+    std::fill_n(userBank.begin(),bankDataOffset,'\0');
+    const auto combined=std::string(settings)+userBank;
     write64(result,hash(combined));
     result.append(settings.data(),settings.size());
-    result.append(reinterpret_cast<const char*>(bank.data()),bank.size());
+    result.append(userBank);
     return result;
 }
 inline ProjectState decode(std::string_view data){
