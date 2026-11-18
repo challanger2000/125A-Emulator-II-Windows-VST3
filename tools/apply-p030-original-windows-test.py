@@ -10,6 +10,50 @@ ROOT=Path(__file__).resolve().parents[1]
 TARGET=ROOT/"upstream/eii-emu/tools/vst3_host_test.cpp"
 MARKER='    auto host=owned(new HostApplication());'
 BLOCK=r'''
+    if(argc>5&&std::string(argv[5])=="original-windows-binary-recall"){
+        // Fully deterministic real Windows factory/COM regression. Public CI
+        // has no original EII ROM, but can prove why modifying a binary song
+        // as plain text is invalid, and that unmodified media survive reopen.
+        using namespace eii::portable;
+        Instance first,second;
+        if(!first.create(factory,cid,host)||!second.create(factory,cid,host)){
+            std::cout<<"P031 WINDOWS BINARY RECALL FAIL: factory instantiation\n";
+            return 1;
+        }
+        auto state=decodeProject(first.getState());
+        auto settings=replaceKey(state.settings,"autoboot","0");
+        settings=replaceKey(settings,"model","5");
+        settings=replaceKey(settings,"rom","C:\\Owner\\EII\\ROM");
+        std::vector<std::uint8_t> syntheticBank(bankBytes,0);
+        for(std::size_t i=bankDataOffset;i<syntheticBank.size();++i)
+            syntheticBank[i]=std::uint8_t((i*17u+(i>>7)+19u)&255u);
+        const auto binaryState=encodeProject(settings,syntheticBank);
+        check(first.setState(binaryState),
+              "P031 original Windows VST3 accepts checksum-correct bank project");
+        const auto stored=first.getState();
+        check(stored==binaryState,
+              "P031 original Windows VST3 preserves bank and state bytes");
+        const auto decoded=decodeProject(stored);
+        check(decoded.hasBank()&&decoded.bank.size()==bankBytes&&
+                  decoded.settings.find("\nmodel=5\n")!=std::string::npos,
+              "P031 full binary bank checksum and settings decode");
+        auto damaged=replaceKey(stored,"rom","Z:\\Other\\ROM");
+        check(damaged!=stored,
+              "P031 legacy raw text substitution actually alters binary project");
+        check(!second.setState(damaged),
+              "P031 VST3 rejects raw-edited bank with stale checksum");
+        check(second.setState(stored),
+              "P031 fresh real Windows VST3 restores unmodified host IBStream");
+        check(second.getState()==stored,
+              "P031 fresh real Windows VST3 recalls identical embedded media");
+        first.shutdown();second.shutdown();
+        check(eiiThreads()==0,"P031 zero leaked EII worker threads");
+        module.reset();
+        std::cout<<(failures?"P031 WINDOWS BINARY RECALL FAIL ":
+                             "P031 WINDOWS BINARY RECALL PASS ")
+                 <<failures<<" failure(s)\n";
+        return failures?1:0;
+    }
     if(argc>5&&(std::string(argv[5])=="original-windows-audio"||
                 std::string(argv[5])=="original-windows-negative")){
         namespace fs=std::filesystem;
@@ -57,14 +101,30 @@ BLOCK=r'''
                 Instance in;
                 requireP030(in.create(factory,cid,host),
                            "could not instantiate actual Windows Custom VST3");
-                std::string configured=restored.empty()?in.getState():restored;
-                configured=replaceKey(configured,"rom",privateRom.string());
-                configured=replaceKey(configured,"floppy",privateFloppy.string());
-                configured=replaceKey(configured,"autoboot","1");
-                configured=replaceKey(configured,"model","5");
-                configured=replaceKey(configured,"native","0");
-                configured=replaceKey(configured,"s3528","0");
-                configured=replaceKey(configured,"memory1mb","0");
+                // The state is a *binary, checksummed* envelope when it has an
+                // embedded bank or HDD. Never run replaceKey on the IBStream
+                // bytes: that changes the payload without updating its hash.
+                // A real DAW also reopens the exact saved IBStream, unchanged.
+                std::string configured;
+                if(restored.empty()){
+                    auto original=eii::portable::decodeProject(in.getState());
+                    auto settings=original.settings;
+                    settings=replaceKey(settings,"rom",privateRom.string());
+                    settings=replaceKey(settings,"floppy",privateFloppy.string());
+                    settings=replaceKey(settings,"autoboot","1");
+                    settings=replaceKey(settings,"model","5");
+                    settings=replaceKey(settings,"native","0");
+                    settings=replaceKey(settings,"s3528","0");
+                    settings=replaceKey(settings,"memory1mb","0");
+                    configured=eii::portable::encodeProject(settings,original.bank,original.hdd);
+                }else{
+                    const auto original=eii::portable::decodeProject(restored);
+                    requireP030(original.settings.find("\nmodel=5\n")!=std::string::npos,
+                               "reopened original project state lost SSM2045 model=5");
+                    requireP030(original.settings.find("\nrom=")!=std::string::npos,
+                               "reopened original project state lost the ROM reference");
+                    configured=restored; // strict, byte-for-byte host project recall
+                }
                 requireP030(in.setState(configured),
                            "original host IBStream project state rejected");
                 requireP030(in.start(48000,kOffline,512),
@@ -133,9 +193,11 @@ BLOCK=r'''
                            "guest original MIDI UART did not consume host MIDI");
                 if(saved){
                     *saved=in.getState();
-                    requireP030(!saved->empty()&&saved->find("\nmodel=5\n")!=std::string::npos,
+                    requireP030(!saved->empty(),"VST3 returned an empty IBStream project");
+                    const auto decoded=eii::portable::decodeProject(*saved);
+                    requireP030(decoded.settings.find("\nmodel=5\n")!=std::string::npos,
                                "saved host state lacks selected original SSM filter");
-                    requireP030(saved->find("\nrom=")!=std::string::npos,
+                    requireP030(decoded.settings.find("\nrom=")!=std::string::npos,
                                "saved host state lost original firmware reference");
                 }
                 std::cout<<"P030 "<<pass<<" original Pxx="<<in.status("lcd0")
