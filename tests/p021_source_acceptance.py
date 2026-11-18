@@ -14,7 +14,7 @@ for k in (
     'bootGate_.store(false,std::memory_order_release);',
     'autonomousBoot_.begin(G_,bootStartMs);',
     'void handoffAutonomousBoot(bool playable){',
-    'void advanceAutonomousBoot(){',
+    'bool advanceAutonomousBoot(){',
     'runTicks(portable::AutonomousBootTimeline::quantum(nonlinear()));',
     'if(presetDisplayed()){',
     'handoffAutonomousBoot(true)',
