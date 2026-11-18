@@ -97,7 +97,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           & "upstream/eii-emu/tools/build-win64-vst3.ps1" -ToolchainRoot $env:LLVM_MINGW_ROOT
           if ($LASTEXITCODE -ne 0) { throw "Windows build/test failed" }
-      - name: Actual Windows VST3 host tests: project bank IBStream round-trip, corruption and isolation
+      - name: "Actual Windows VST3 host tests: project bank IBStream round-trip, corruption and isolation"
         shell: pwsh
         run: |
           $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
