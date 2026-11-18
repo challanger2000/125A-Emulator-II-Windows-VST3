@@ -20,6 +20,6 @@ assert 'if(originalPlayable()){' in boot
 assert 'if(presetDisplayed()){' not in boot
 assert boot.index('if(originalPlayable()){')<boot.index('handoffAutonomousBoot(true);')
 assert 'originalPlayable(),!next.floppy.idle||!next.hdd.idle,halted_);' in e
-assert 'first Pxx' in h
+assert 'Pxx LCD' in h and 'SCN2651' in h
 assert "void Machine::run(std::uint64_t cycles)" in (root/"upstream/eii-emu/src/machine.cpp").read_text()
 print("P024 first real LCD Pxx + firmware MIDI UART gating/recalled program/boot status PASS")
