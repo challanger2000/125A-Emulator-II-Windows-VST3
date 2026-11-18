@@ -176,9 +176,11 @@ def patch(e,i,r,v):
         localAnchorEpoch_=epoch_.load(std::memory_order_acquire);
         streamGeneration_.fetch_add(1,std::memory_order_release);
         anchorEpoch_.store(localAnchorEpoch_,std::memory_order_release);
-        if(!playable)
+        if(!playable && error_.empty())
             error_="Original startup fell back to host pacing without a "
                    "playable Pxx. Check the boot clock/HDD/OS in Status.";
+        // Preserve the REAL machine exception if the original Z80/disk/DSP
+        // failed. An earlier P021 generic fallback message masked it.
         bootGate_.store(true,std::memory_order_release);
         anchorSignal_.set();wake_.set();
     }
