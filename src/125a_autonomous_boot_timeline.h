@@ -11,7 +11,9 @@ class AutonomousBootTimeline {
 public:
     static constexpr std::uint64_t cpuHz=4000000;
     static constexpr std::uint64_t maxBootTicks=240*cpuHz;
-    static constexpr std::uint64_t maxBootWallMs=90000;
+    // A previous original ROM/HDD startup exceeded 130 s. The wall watchdog
+    // must never mistake that for a failed guest boot.
+    static constexpr std::uint64_t maxBootWallMs=300000;
     void begin(std::uint64_t virtualTick,std::uint64_t wallMs)noexcept {
         booting_=true;startVirtual_=virtualTick;startWall_=wallMs;
     }
