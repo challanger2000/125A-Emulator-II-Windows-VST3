@@ -21,6 +21,9 @@ jobs:
           test -f upstream/eii-emu/src/125a_wav_input.h
           python3 tools/apply-wav-auto.py --verify
           python3 tools/apply-wav-auto.py
+          python3 tools/apply-project-state.py --verify
+          python3 tools/apply-project-state.py
+          grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
       - name: Compile native C++23 WAV-to-SAR-input tests
@@ -67,6 +70,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P003 preflight failed" }
           python tools/apply-wav-auto.py
           if ($LASTEXITCODE -ne 0) { throw "P003 application failed" }
+          python tools/apply-project-state.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P004 preflight failed" }
+          python tools/apply-project-state.py
+          if ($LASTEXITCODE -ne 0) { throw "P004 application failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
         shell: pwsh
         run: |
