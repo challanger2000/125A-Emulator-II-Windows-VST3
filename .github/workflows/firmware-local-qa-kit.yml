@@ -19,12 +19,14 @@ jobs:
           python3 tools/apply-wav-bridge.py
           python3 tools/apply-wav-auto.py --verify
           python3 tools/apply-wav-auto.py
+          python3 tools/apply-project-state.py --verify
+          python3 tools/apply-project-state.py
       - name: Assemble public-source offline probe kit (NO proprietary data)
         run: |
           mkdir -p artifact
-          tar -czf artifact/125A-EII-P003-open-source-probe.tar.gz \
+          tar -czf artifact/125A-EII-P004-open-source-probe.tar.gz \
             -C upstream/eii-emu src vendor tests tools README.md LICENSE CMakeLists.txt
-          cp docs/P001-WAV-BRIDGE.md artifact/P003-TEST-CONTRACT.md
+          cp docs/P001-WAV-BRIDGE.md artifact/P004-TEST-CONTRACT.md
           python3 - <<'PY'
           import math,struct,wave,pathlib
           name=pathlib.Path("artifact/125A-eii-private-440Hz-tone.wav")
@@ -36,7 +38,7 @@ jobs:
           find artifact -type f -printf '%f %s bytes\n'
       - uses: actions/upload-artifact@v4
         with:
-          name: P003-PUBLIC-source-local-original-firmware-test-kit
+          name: P004-PUBLIC-source-local-original-firmware-test-kit
           path: artifact/
           if-no-files-found: error
           retention-days: 5
