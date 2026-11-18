@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +25,9 @@ jobs:
           python3 tools/apply-project-state.py
           python3 tools/apply-bundled-resources.py --verify
           python3 tools/apply-bundled-resources.py
+          python3 tools/apply-ux-safety.py --verify
+          python3 tools/apply-ux-safety.py
+          python3 tests/p008_source_acceptance.py
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
@@ -85,6 +88,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P006 resource preflight failed" }
           python tools/apply-bundled-resources.py
           if ($LASTEXITCODE -ne 0) { throw "P006 resource patch failed" }
+          python tools/apply-ux-safety.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P008 safety preflight failed" }
+          python tools/apply-ux-safety.py
+          if ($LASTEXITCODE -ne 0) { throw "P008 safety application failed" }
+          python tests/p008_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tools/apply-vst3-state-host-test.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
           python tools/apply-vst3-state-host-test.py
