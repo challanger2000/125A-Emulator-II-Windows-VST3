@@ -1,25 +1,35 @@
-# 125A Emulator II — Windows VST3 (development)
+# 125A Emulator II — Windows VST3
 
-**Status: WAV input bridge P001; NOT a one-click playable WAV importer.**
+**Current: P003 WAV import — original firmware capture verified locally (DEV, not release).**
+Hardware core: [Tuth/eii-emu](https://github.com/Tuth/eii-emu), locked to commit `e345bcf00af8a066ebace9168cf0b6c3a40ca164` (GPL-3.0). The pinned source is a **build-time dependency only**; the Windows VST3 itself does not require a separate 86Box/host.
 
-Upstream hardware emulation: [Tuth/eii-emu](https://github.com/Tuth/eii-emu) at pinned commit `e345bcf00af8a066ebace9168cf0b6c3a40ca164` (GPL-3.0). This repository uses a source submodule for reproducible Windows VST3 builds. The final VST3 must be self-contained at runtime; a Git submodule is a build-time source dependency only.
+## What already works
 
-## P001
+- A single Windows x64 **EmulatorII-Custom.vst3** built from the original EII hardware emulator, original ROM+OS at runtime (user supplied), original EIII-style CEM3387 **Custom** filter remains available.
+- Settings menu: **125A: WAV automatisch aufnehmen...** accepts WAV PCM8/16/24/32 and IEEE Float32, mono/stereo 8–384 kHz, max 64 MiB and initial recording length **10 seconds**. Decoder rejects corrupt and >0 dBFS floating-point files, rather than normalizing or clipping.
+- The plug-in's machine-owner state machine presses and releases the **original** firmware's SAMPLE, FORCE (9), STOP (0) and exit buttons. It waits for real LCD states / SAR reads. The source starts at the **real ADC recording request**, not during the pre-recording live monitor. No direct writes to guest sample RAM or fabricated sample/preset headers.
+- USB/disk not required for **user interaction** during recording, but the emulator still needs its original **OS3.1 disk image mounted** at startup because the real firmware loads the SAMPLE overlay from it.
+- Recorded voice is immediately auditionable at the original **MIDI note 48**. Other key ranges and sample mapping are not yet configurable via the importer.
 
-The C++23 decoder accepts bounded RIFF WAV PCM8/16/24/32 or IEEE Float32, mono/stereo, 8–384 kHz. Float above digital full scale and malformed/corrupted files are **rejected** rather than normalized or silently clipped. Stereo is explicitly averaged to the original single-channel sample input. On first actual emulated SAMPLE-converter input request the WAV begins at machine time. The original SAR, antialias filter, ADC and firmware are not bypassed.
+**Critical remaining limit:** The recorded voice is currently **volatile RAM only**, and **is not embedded in DAW project state**. Saving a Studio One project does **not** yet save the new WAV/sampled bank. Restarting the instance loses this imported audio unless separately saved through the firmware. Do not treat P003 as a finished sampler or production release.
 
-The Windows editor gets two non-realtime menu commands, **125A: WAV als SAMPLE-Eingang vorbereiten** and **deaktivieren**. User still needs original firmware SAMPLE and bank-save operation; automatically constructed playable presets and project-portable embedded sample-state are **NOT IMPLEMENTED**. Until firmware-triggered recording and bank persistence are measured this is a research candidate, not a replacement for virtual media.
+## Verified evidence
 
-## Developer preflight
+- [GitHub Actions P003 current branch: 44279490227](https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44279490227): Windows x64 Custom VST3 build PASS, existing runtime/audio/input tests PASS, Steinberg validator **47/47 PASS**, new native firmware-contact model, original Z80/SAR/DRAM WAV-vs-silence tests PASS.
+- **Private local original-ROM/OS test, 2026-11-18**: original EII firmware OS3.1 boot P01; our P003 state machine handled SAMPLE/FORCE/STOP, firmware displayed **Sample is good**, exited to P01, 84,814 SAR reads; MIDI48 produced 120,000 frames (peak 0.140317, RMS 0.077757) in the original audio engine. An independent upstream analog SAMPLE probe with 440-Hz synthetic WAV yielded actual 440.00-Hz DRAM and 440.00-Hz audible playback, with zero significant phase discontinuities. Full evidence in `docs/P003-PRIVATE-FIRMWARE-ACCEPTANCE.md`.
+- **Not yet tested**: automated importer inside real Studio One VST3, persistable host state/save/reopen, multi-import voice mapping, multiple concurrent instances.
 
-- Checkout recursive submodules; upstream version is pinned.
-- `python3 tools/apply-wav-bridge.py --verify` checks pinned upstream and patch anchors without changing files.
-- `python3 tools/apply-wav-bridge.py` inserts the GUI bridge into the local upstream worktree and copies the header. No upstream GitHub repository is changed.
-- `g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src -I upstream/eii-emu/src tests/wav_input_tests.cpp -o wav_input_tests && ./wav_input_tests`
-- Windows build after local overlay: follow pinned upstream `tools/build-win64-vst3.ps1`; **Windows/Steinberg/Studio One results have not been established**.
+## Developer setup
 
-## Engineering and legal boundaries
+Checkout this repository with recursive submodules. CI reproduces build-only source overlays on the **pinned** upstream snapshot (never changes Tuth GitHub):
 
-Read [125A-Engineering/START-HERE.md](https://github.com/challanger2000/125A-Engineering/blob/main/START-HERE.md), its complete mandatory references and [docs/P001-WAV-BRIDGE.md](docs/P001-WAV-BRIDGE.md) before editing. Use development branches, never direct changes to main. Reference 125A Vintage Sampler III firmware WAV-import *workflow concepts*, not copied proprietary/unverified code. Upstream GPL-3.0 terms and notices remain applicable, including to a distributed derivative binary.
+```bash
+python3 tools/apply-wav-bridge.py --verify
+python3 tools/apply-wav-bridge.py
+python3 tools/apply-wav-auto.py --verify
+python3 tools/apply-wav-auto.py
+```
 
-**No original E-mu ROM, OS/sample disks, copyrighted banks or private user media in this repository or CI artifacts.**
+Then run the native/Windows CI tests in `.github/workflows/wav-bridge-qa.yml`. Windows uses `upstream/eii-emu/tools/build-win64-vst3.ps1` and the frozen LLVM-MinGW UCRT toolchain. Original private ROMs/disk are deliberately excluded from GitHub; the user-supplied firmware acceptance kit is built separately via `.github/workflows/firmware-local-qa-kit.yml`. For ongoing engineering, read the complete 125A [START-HERE](https://github.com/challanger2000/125A-Engineering/blob/main/START-HERE.md) and associated guardrails.
+
+**License:** The upstream source is GPL-3.0. Retain its notices and applicable source-distribution obligations for modified, publicly distributed VST3 binaries. Do not commit, upload or include proprietary E-mu ROMs, OS disks, user samples, or private test assets.
