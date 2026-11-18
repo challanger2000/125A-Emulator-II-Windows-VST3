@@ -18,7 +18,7 @@ for marker in (
     "P027 SAME VST3 PLUGINENGINE FULL ORIGINAL ROM/CHOIR REBOOT",
 ):
     assert marker in s,marker
-assert s.count("e.boot(settings,true);")==2
+assert s.count("e.boot(settings,true);")==3  # synthetic fixture + original first boot + original reboot
 assert "PRIVATE_ORIGINAL_PLUGIN_BOOT" in s
 assert "P025 PRIVATE ORIGINAL ROM 4MHZ" in s
 assert 'if(argc==4&&std::string_view(argv[1])=="--private-only")' in s
