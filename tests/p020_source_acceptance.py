@@ -12,10 +12,14 @@ for v in (
     "bootClock_.begin(bootNowMs,machine_->ticks,",
     "s.boot=bootClock_.observe(",
     "tickOf(hostTarget_.load(std::memory_order_acquire))",
-    "presetDisplayed(),!next.floppy.idle||!next.hdd.idle,halted_",
     "originalBootBatch_.quantum(dsp,urgent,unsafeFast)",
 ):
     assert v in engine, "P020 missing boot owner telemetry "+v
+if "originalFirmwareMidiReady(" in engine:
+    assert "portable::originalFirmwareMidiReady(" in engine[engine.index("s.boot=bootClock_.observe("):]
+    assert "presetDisplayed(),machine_->midiSerial.enabled()" in engine
+else:
+    assert "presetDisplayed(),!next.floppy.idle||!next.hdd.idle,halted_" in engine
 for v in (
     'wide(portable::bootStageName(s.boot.stage))',
     "double(s.boot.virtualTicks)/4e6",
