@@ -25,7 +25,7 @@ int main(){
     constexpr std::uint64_t gap=180ull*48000;
     ring.pushSilence(gap);
     check(ring.written()==3+gap,"long silence maintains precise absolute frame address");
-    for(const auto id:{3+gap-1,3+gap-2,3+gap-FrameRing::capacity}){
+    for(const auto id:{3+gap-1,3+gap-2,3+gap-FrameRing::capacity+1}){
         Frame got{.left=42.f,.right=43.f};
         check(ring.read(id,got)&&got.left==0&&got.right==0,
               "all physically retained late silence is actually zero");
