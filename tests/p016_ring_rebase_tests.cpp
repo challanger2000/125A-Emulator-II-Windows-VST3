@@ -50,7 +50,7 @@ int main(){
     ChannelRing::Frame read{};
     check(chans.read(0,read)&&read[2]==.5f,"original individual output unchanged");
     chans.alignTo(gap+1);
-    for(const auto id:{gap,gap+1-ChannelRing::capacity}){
+    for(const auto id:{gap,gap+1-ChannelRing::capacity+1}){
         ChannelRing::Frame zero{};
         check(chans.read(id,zero),"late channel silence exists");
         for(float v:zero)check(v==0.f,"no stale jack audio after host rebase");
