@@ -1,6 +1,6 @@
 # P004 Windows VST3 — START HERE (development / private test)
 
-**Status:** Internal development build, not a public product release. Do not redistribute the plugin or bundled firmware. Original E-mu ROMs/OS are NOT included.
+**Status:** Internal development build, not an approved public product release. Original E-mu ROMs/OS are NOT included. Redistribution of GPL-covered binary components requires compliance with their licenses and corresponding-source obligations; proprietary E-mu firmware must not be bundled without appropriate rights.
 
 ## Install
 
