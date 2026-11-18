@@ -16,6 +16,7 @@ UP=ROOT/"upstream/eii-emu"
 ENGINE=UP/"src/vst3/plugin_engine.h"
 COMPONENT=UP/"src/vst3/eii_vst3.cpp"
 STATE=UP/"src/vst3/plugin_state.h"
+EDITOR=UP/"src/vst3/plugin_editor.h"
 PIN="e345bcf00af8a066ebace9168cf0b6c3a40ca164"
 
 def one(s,a,b,label):
@@ -23,11 +24,18 @@ def one(s,a,b,label):
     if n!=1:raise RuntimeError(f"P017 {label}: expected exactly one source anchor, got {n}")
     return s.replace(a,b,1)
 
-def patch(e,v,s):
+def patch(e,v,s,ed):
     if "captureHddForProject()" in e:raise RuntimeError("P017 already installed")
     for mark in ("ProjectSaveFrame projectSaveFrame()const", "bankMediaWatch_.reset()",
                  "void observeMediaReads()", "void saveCurrentBankInProject()"):
         if mark not in e:raise RuntimeError("P017 requires applied P015/P014: "+mark)
+    e=one(e,
+        '''    bool projectNeedsBankCapture()const noexcept{''',
+        '''    bool projectNeedsHddCapture()const noexcept{
+        return hddNeedsSnapshot_.load(std::memory_order_acquire);
+    }
+    bool projectNeedsBankCapture()const noexcept{''',
+        "nonblocking UI HDD project warning")
     e=one(e,
         '#include "125a_live_media_watch.h"',
         '#include "125a_live_media_watch.h"\n#include "125a_portable_hdd.h"',
@@ -281,7 +289,15 @@ def patch(e,v,s):
                 b?std::span<const std::uint8_t>(*b):std::span<const std::uint8_t>{},
                 h?std::span<const std::uint8_t>(*h):std::span<const std::uint8_t>{});''',
         "serialize checked full HDD and bank atomically")
-    return e,v,s
+    ed=one(ed,
+        '''        if(!s.panel.error.empty())o<<L"\\n\\nLast message: "<<wide(s.panel.error);''',
+        '''        o<<L"\\nHDD project: "<<
+            (backend_.engine().projectNeedsHddCapture()?
+                L"UNSAVED/INCOMPLETE - finish HDD access and save song again":
+                L"No pending HDD snapshot");
+        if(!s.panel.error.empty())o<<L"\\n\\nLast message: "<<wide(s.panel.error);''',
+        "visible status: pending original HDD song state")
+    return e,v,s,ed
 
 def main():
     ap=argparse.ArgumentParser()
@@ -291,12 +307,13 @@ def main():
     if sha!=PIN:raise RuntimeError("P017 original EII kernel mismatch")
     sources=patch(ENGINE.read_text(encoding="utf-8"),
                   COMPONENT.read_text(encoding="utf-8"),
-                  STATE.read_text(encoding="utf-8"))
+                  STATE.read_text(encoding="utf-8"),
+                  EDITOR.read_text(encoding="utf-8"))
     if args.verify:
         print("P017 source anchors: complete portable original HDD state PASS")
         return
     shutil.copyfile(ROOT/"src/125a_portable_hdd.h",UP/"src/125a_portable_hdd.h")
-    for path,body in zip((ENGINE,COMPONENT,STATE),sources):
+    for path,body in zip((ENGINE,COMPONENT,STATE,EDITOR),sources):
         path.write_text(body,encoding="utf-8",newline="\n")
     print("P017 original HDD project-state capture/boot integrated")
 
