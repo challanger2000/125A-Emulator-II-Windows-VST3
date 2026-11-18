@@ -93,9 +93,16 @@ int main(int argc,char** argv)try{
 
     const auto start=Clock::now();
     std::uint64_t nextLog=ticksPerSecond;
+    bool firstPxx=false;
     show(*m,seconds(start),"BOOT_BEGIN");
-    while(!playable(*m)&&m->ticks<std::uint64_t(maxVirtualSeconds)*ticksPerSecond){
+    // A visible P01 is NOT yet equivalent to fully initialized MIDI.
+    while((!playable(*m)||!m->midiSerial.enabled())&&
+          m->ticks<std::uint64_t(maxVirtualSeconds)*ticksPerSecond){
         m->run(quantum); // exactly every original Z80/DRAM/DMA/SIO tick
+        if(playable(*m)&&!firstPxx){
+            show(*m,seconds(start),"BOOT_FIRST_PLAYABLE_PXX");
+            firstPxx=true;
+        }
         if(m->ticks>=nextLog){
             show(*m,seconds(start),"BOOT_PROGRESS");
             nextLog=m->ticks+ticksPerSecond;
@@ -109,11 +116,11 @@ int main(int argc,char** argv)try{
         show(*m,seconds(start),"BOOT_VIRTUAL_TIMEOUT");
         return 4;
     }
-    show(*m,seconds(start),"BOOT_FIRST_PLAYABLE_PXX");
     if(!m->midiSerial.enabled()){
-        std::cerr<<"BOOT reached Pxx but original firmware MIDI UART is not enabled\n";
+        show(*m,seconds(start),"BOOT_PXX_WITHOUT_MIDI_READY");
         return 5;
     }
+    show(*m,seconds(start),"BOOT_PXX_AND_MIDI_READY");
     const std::array<std::uint8_t,3> on{0x90,60,100};
     if(!m->receiveMidi(on))throw std::runtime_error("Original UART rejected NoteOn 60");
     noteStarted=true;
