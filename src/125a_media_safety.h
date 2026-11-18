@@ -2,6 +2,7 @@
 #pragma once
 // P012: distinguish a factory-sized .EII performance bank from an
 // incomplete file, and distinguish blank, unformatted HDD media from free slots.
+#include <algorithm>
 #include "eii_bank_format.h"
 #include <cstddef>
 #include <cstdint>
