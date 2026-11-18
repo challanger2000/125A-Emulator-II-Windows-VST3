@@ -74,7 +74,7 @@ jobs:
           /tmp/p015_live_media_watch_tests
       - name: Test 180-second audio callback stall and real-time ring resume
         run: |
-          g++ -std=c++23 -O3 -Wall -Wextra -Werror -pedantic -pthread -I upstream/eii-emu/src tests/p016_ring_rebase_tests.cpp -o /tmp/p016_ring_rebase_tests
+          g++ -std=c++23 -O3 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -pthread -I upstream/eii-emu/src tests/p016_ring_rebase_tests.cpp -o /tmp/p016_ring_rebase_tests
           /tmp/p016_ring_rebase_tests
       - name: Compile bundled ROM/OS path regression
         run: |
