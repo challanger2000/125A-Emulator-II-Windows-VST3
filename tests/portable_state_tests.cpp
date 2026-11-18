@@ -21,7 +21,21 @@ int main(){
     need(combined.size()==headerSize+settings.size()+bankBytes,"raw binary compact envelope");
     need(combined.size()<maxStateBytes,"fits VST3 read bound");
     const auto rebuilt=decode(combined);
-    need(rebuilt.settings==settings&&rebuilt.bank==bank,"exact full disk round trip");
+    auto bankOnly=bank;
+    std::fill_n(bankOnly.begin(),bankDataOffset,0);
+    need(rebuilt.settings==settings&&rebuilt.bank==bankOnly,"exact user-bank region and scrubbed OS region");
+    need(std::all_of(rebuilt.bank.begin(),rebuilt.bank.begin()+bankDataOffset,
+                     [](std::uint8_t x){return x==0;}),
+         "no original EII operating system bytes in DAW state");
+    // Accept the historical P004 full-disk envelope but strip it on re-save.
+    std::string prior=std::string(magic.data(),magic.size());
+    write32(prior,std::uint32_t(settings.size()));write32(prior,std::uint32_t(bank.size()));
+    const std::string priorBody=settings+
+        std::string(reinterpret_cast<const char*>(bank.data()),bank.size());
+    write64(prior,hash(priorBody));prior+=priorBody;
+    const auto previous=decode(prior);
+    need(previous.bank==bank,"historic P004 full-image state accepted");
+    need(encode(previous.settings,previous.bank)==combined,"historic state converted to bank-only format");
     auto broken=combined;broken[broken.size()-1]^=1;
     rejects([&]{decode(broken);},"payload corruption");
     broken=combined;broken[headerSize+13]^=1;
@@ -36,8 +50,9 @@ int main(){
     rejects([&]{encode(settings,std::span<const std::uint8_t>(bank.data(),bank.size()-1));},"partial image");
     std::string wrong="OTHER-VST3 1\n";
     rejects([&]{encode(wrong,bank);},"foreign settings");
-    auto b2=bank;b2[40000]^=0x7f;
-    need(decode(encode(settings,b2)).bank==b2,"distinct independent saved banks");
+    auto b2=bank;b2[bankDataOffset+40000]^=0x7f;
+    auto expectedB2=b2;std::fill_n(expectedB2.begin(),bankDataOffset,0);
+    need(decode(encode(settings,b2)).bank==expectedB2,"distinct independent user banks");
     for(std::size_t n=0;n<headerSize+24;++n){
         rejects([&]{decode(std::string_view(combined).substr(0,n));},"all short prefixes rejected");
     }
