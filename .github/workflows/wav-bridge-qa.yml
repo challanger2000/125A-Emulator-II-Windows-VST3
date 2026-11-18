@@ -74,6 +74,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P004 preflight failed" }
           python tools/apply-project-state.py
           if ($LASTEXITCODE -ne 0) { throw "P004 application failed" }
+          python tools/apply-vst3-state-host-test.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
+          python tools/apply-vst3-state-host-test.py
+          if ($LASTEXITCODE -ne 0) { throw "P004 host test patch failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
         shell: pwsh
         run: |
@@ -93,6 +97,14 @@ jobs:
           $ErrorActionPreference = "Stop"
           & "upstream/eii-emu/tools/build-win64-vst3.ps1" -ToolchainRoot $env:LLVM_MINGW_ROOT
           if ($LASTEXITCODE -ne 0) { throw "Windows build/test failed" }
+      - name: Actual Windows VST3 host tests: project bank IBStream round-trip, corruption and isolation
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          if (-not (Test-Path $probe)) { throw "VST3 host probe missing" }
+          & $probe $bundle "unused" "unused" "unused" "project-state"
+          if ($LASTEXITCODE -ne 0) { throw "Real COM VST3 project bank state roundtrip failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
