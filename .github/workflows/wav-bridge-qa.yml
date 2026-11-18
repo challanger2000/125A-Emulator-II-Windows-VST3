@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,10 +27,17 @@ jobs:
           python3 tools/apply-bundled-resources.py
           python3 tools/apply-ux-safety.py --verify
           python3 tools/apply-ux-safety.py
+          python3 tools/apply-p010-bank-recall.py --verify
+          python3 tools/apply-p010-bank-recall.py
           python3 tests/p008_source_acceptance.py
+          python3 tests/p010_source_acceptance.py
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
+      - name: Test immutable selected .EII project-bank snapshot
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/selected_bank_tests.cpp -o /tmp/selected_bank_tests
+          /tmp/selected_bank_tests
       - name: Compile bundled ROM/OS path regression
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/bundled_resources_tests.cpp -o /tmp/bundled_resources_tests
@@ -92,8 +99,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P008 safety preflight failed" }
           python tools/apply-ux-safety.py
           if ($LASTEXITCODE -ne 0) { throw "P008 safety application failed" }
+          python tools/apply-p010-bank-recall.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P010 preflight failed" }
+          python tools/apply-p010-bank-recall.py
+          if ($LASTEXITCODE -ne 0) { throw "P010 overlay failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
+          python tests/p010_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P010 source integration acceptance failed" }
           python tools/apply-vst3-state-host-test.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
           python tools/apply-vst3-state-host-test.py
@@ -137,11 +150,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P004.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P010.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P004-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P010-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
