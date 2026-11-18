@@ -52,6 +52,18 @@ int main(){
          .25+(.75-.25)*(double(4000000/48000)*48000/4000000),1e-6,
          "machine-tick interpolation");
     near(src.volts(1000000+4000000),0,1e-9,"post-wave silence");
+    // Critical original-firmware gate: analog monitoring before FORCE
+    // cannot consume the beginning of the imported waveform.
+    std::uint64_t reads=19;
+    Source gated(decoded);gated.armAfterRead(&reads,reads);
+    near(gated.volts(1200000),0,1e-9,"no source before INI");
+    check(!gated.started(),"pre-FORCE monitoring remains silent");
+    ++reads;
+    near(gated.volts(1400000),.25,1e-9,"source starts on first real INI");
+    check(gated.started()&&gated.startTick()==1400000,"source has precise emulated start");
+    near(gated.volts(1400000+4000000),0,1e-9,"no waveform loop");
+    gated.disarmReadGate();
+    check(gated.durationTicks()==250,"decoded three-frame duration in 4MHz ticks");
     // Stereo PCM24 downmix: both channels independently parsed and averaged.
     Bytes stereo24={0xff,0xff,0x7f,0x00,0x00,0x80};
     const auto d24=decode(file(1,24,2,44100,stereo24));

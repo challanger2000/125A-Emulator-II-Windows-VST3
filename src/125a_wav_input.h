@@ -132,7 +132,10 @@ public:
         if(wave_.mono.empty()||wave_.rate==0)throw std::invalid_argument("Empty WAV input");
     }
     double volts(std::uint64_t tick,double fraction=0)noexcept override {
-        if(!started_){startTick_=tick;started_=true;}
+        if(!started_){
+            if(readCounter_ && *readCounter_<=readBaseline_)return 0.0;
+            startTick_=tick;started_=true;
+        }
         if(tick<startTick_)return 0;
         const double position=(double(tick-startTick_)+fraction)*double(wave_.rate)/machineTicksPerSecond;
         if(!std::isfinite(position)||position<0||position>=double(wave_.mono.size()))return 0;
@@ -140,14 +143,29 @@ public:
         const double frac=position-double(index);
         return double(wave_.mono[index])+(double(wave_.mono[next])-wave_.mono[index])*frac;
     }
+    // For automatic firmware recording, suppress input until the first REAL
+    // OS3.1 Z80 INI sample read. Otherwise WAV playback would finish while
+    // the OS is merely monitoring the input before FORCE is pressed.
+    // The counter lives in Machine and is read only on the same machine owner
+    // thread. The engine MUST disarm the gate before replacing that Machine.
+    void armAfterRead(const std::uint64_t* counter,std::uint64_t baseline)noexcept {
+        readCounter_=counter;readBaseline_=baseline;started_=false;startTick_=0;
+    }
+    void disarmReadGate()noexcept{readCounter_=nullptr;}
     void idle(std::uint64_t)noexcept override {} // no trigger before firmware SAMPLE
     bool started()const noexcept{return started_;}
+    std::uint64_t startTick()const noexcept{return startTick_;}
+    std::uint64_t durationTicks()const noexcept{
+        return std::uint64_t(std::ceil(double(wave_.mono.size())*machineTicksPerSecond/double(wave_.rate)));
+    }
     std::size_t frames()const noexcept{return wave_.mono.size();}
     std::uint32_t rate()const noexcept{return wave_.rate;}
 private:
     Wav wave_;
     std::uint64_t startTick_=0;
     bool started_=false;
+    const std::uint64_t* readCounter_=nullptr;
+    std::uint64_t readBaseline_=0;
 };
 inline std::shared_ptr<analog::SampleInputSource> loadSource(const std::filesystem::path& path) {
     return std::make_shared<Source>(load(path));
