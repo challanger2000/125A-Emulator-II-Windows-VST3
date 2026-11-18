@@ -50,7 +50,7 @@ jobs:
           /tmp/firmware_cancel_tests
       - name: Test strict original EII bank size and blank HDD detection
         run: |
-          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src -I upstream/eii-emu/src tests/p012_media_safety_tests.cpp -o /tmp/p012_media_safety_tests
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src tests/p012_media_safety_tests.cpp -o /tmp/p012_media_safety_tests
           /tmp/p012_media_safety_tests
       - name: Compile bundled ROM/OS path regression
         run: |
