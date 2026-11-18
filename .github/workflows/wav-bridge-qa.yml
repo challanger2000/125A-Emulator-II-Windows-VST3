@@ -15,8 +15,65 @@ jobs:
           persist-credentials: false
       - name: Check pinned upstream and patch anchors
         run: python3 tools/apply-wav-bridge.py --verify
+      - name: Apply deterministic local WAV menu integration
+        run: |
+          python3 tools/apply-wav-bridge.py
+          test -f upstream/eii-emu/src/125a_wav_input.h
+          grep -Fq 'eii::wav::loadSource(file)' upstream/eii-emu/src/vst3/plugin_editor.h
       - name: Compile native C++23 WAV-to-SAR-input tests
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src -I upstream/eii-emu/src tests/wav_input_tests.cpp -o /tmp/wav_input_tests
       - name: Test positive, negative and firmware-input activation cases
         run: /tmp/wav_input_tests
+
+  windows-vst3:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Verify and apply source-pinned bridge
+        shell: pwsh
+        run: |
+          python tools/apply-wav-bridge.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "Bridge preflight failed" }
+          python tools/apply-wav-bridge.py
+          if ($LASTEXITCODE -ne 0) { throw "Bridge application failed" }
+      - name: Install pinned LLVM-MinGW 20261006 UCRT x64
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $zip = Join-Path $env:RUNNER_TEMP "llvm-mingw-ucrt.zip"
+          $root = Join-Path $env:RUNNER_TEMP "llvm-mingw"
+          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20261006/llvm-mingw-20261006-ucrt-x86_64.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -LiteralPath $zip -DestinationPath $root
+          $compiler = Get-ChildItem -Path $root -Filter "x86_64-w64-mingw32-clang++.exe" -Recurse -File | Select-Object -First 1
+          if (-not $compiler) { throw "Pinned LLVM-MinGW compiler not found" }
+          $toolchain = Split-Path (Split-Path $compiler.FullName -Parent) -Parent
+          "LLVM_MINGW_ROOT=$toolchain" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Build real Windows Custom VST3 and upstream tests/Steinberg validator
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & "upstream/eii-emu/tools/build-win64-vst3.ps1" -ToolchainRoot $env:LLVM_MINGW_ROOT
+          if ($LASTEXITCODE -ne 0) { throw "Windows build/test failed" }
+      - name: Verify installable bundle and no included private media
+        shell: pwsh
+        run: |
+          $root="upstream/eii-emu/build/win64-vst3"
+          $bundle=Join-Path $root "EmulatorII-Custom.vst3"
+          $dll=Join-Path $bundle "Contents/x86_64-win/EmulatorII-Custom.vst3"
+          if (-not (Test-Path $dll)) { throw "Missing VST3 binary" }
+          if ((Get-Item $dll).Length -lt 100000) { throw "Unexpectedly small VST3" }
+          $private=Get-ChildItem $bundle -File -Recurse | Where-Object {$_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img')}
+          if ($private) { throw "No licensed ROM/media may enter public package" }
+          New-Item -ItemType Directory -Force artifact | Out-Null
+          Copy-Item $bundle -Destination artifact -Recurse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: P001-EmulatorII-Custom-Windows-VST3-DEV-NOT-FINAL
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 5
