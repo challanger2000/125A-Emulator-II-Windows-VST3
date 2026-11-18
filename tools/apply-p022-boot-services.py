@@ -38,13 +38,11 @@ def patch(e,t):
         "original owner preboot service policy")
 
     e=one(e,
+        '''    void bootNow(bool discard,bool fromState){''',
         '''    void bootNow(bool discard,bool fromState){
-        try{''',
-        '''    void bootNow(bool discard,bool fromState){
-        // If the attempted reset fails AFTER the host audio gate closes,
-        // the existing instrument must not remain permanently silent.
-        bool gatedThisAttempt=false;
-        try{''',
+        // If reset fails AFTER the audio gate closes, the existing
+        // instrument must not remain permanently silent.
+        bool gatedThisAttempt=false;''',
         "transactional gate closure during boot reset")
     e=one(e,
         '''            bootGate_.store(false,std::memory_order_release);
