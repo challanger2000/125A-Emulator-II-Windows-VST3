@@ -27,7 +27,7 @@ for expected in (
     assert expected in e,"P022 missing original-media/DAW gate: "+expected
 a=e[e.index('bool advanceAutonomousBoot(){'):e.index('bool quitRequested()',e.index('bool advanceAutonomousBoot(){'))]
 assert a.index('events_.pop();++consumed;')<a.index('flushThrottle();')<a.index(
-    'portable::insertDelayedFloppy(')<a.index('if(presetDisplayed()){')
+    'portable::insertDelayedFloppy(')<a.index('if(originalPlayable()){')
 assert a.index('if(floppyBacking_)installFloppy(*machine_,floppyBacking_);')<a.index(
     'runTicks(portable::AutonomousBootTimeline::quantum(nonlinear()));')
 assert a.index('bootMidiDiscarded_.fetch_add(')<a.index('events_.pop();')
