@@ -61,6 +61,7 @@ jobs:
           python3 tools/apply-p029-default-safety.py --verify
           python3 tools/apply-p029-default-safety.py
           python3 tests/p029_default_source_tests.py
+          python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
           python3 tests/p011_source_acceptance.py
@@ -340,6 +341,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host patch failed" }
           python tests/p029_host_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host source assertions failed" }
+          python tools/apply-p030-original-windows-test.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P030 private original-ROM Windows COM host preflight failed" }
+          python tools/apply-p030-original-windows-test.py
+          if ($LASTEXITCODE -ne 0) { throw "P030 original-ROM Windows COM host probe integration failed" }
+          python tests/p030_original_windows_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P030 Windows original hardware PCM/recall source contract failed" }
           python tests/p026_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
@@ -383,6 +390,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "default-filter"
           if ($LASTEXITCODE -ne 0) { throw "P029 real Windows VST3 default/persistence acceptance failed" }
+      - name: Verify original Windows hardware ROM/PCM host test rejects fake ROM (negative control)
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-windows-negative"
+          if ($LASTEXITCODE -ne 0) { throw "P030 synthetic invalid original-ROM negative control failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
@@ -395,11 +409,28 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P029.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P030.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P029-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P030-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
+          if-no-files-found: error
+          retention-days: 5
+      - name: Prepare owner-local Windows original-ROM verification tools (NO MEDIA)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force 'artifact-p030-owner-qa' | Out-Null
+          Copy-Item 'upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3' 'artifact-p030-owner-qa' -Recurse
+          Copy-Item 'upstream/eii-emu/build/win64-vst3/vst3_host_test.exe' 'artifact-p030-owner-qa/vst3_host_test.exe'
+          Copy-Item 'tools/Test-Private-Original-EII.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII.ps1'
+          Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
+          Copy-Item 'LICENSE' 'artifact-p030-owner-qa/GPL-3.0-LICENSE.txt'
+          $bad=Get-ChildItem 'artifact-p030-owner-qa' -Recurse -File | Where-Object { $_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img') }
+          if($bad){throw 'P030 private ROM/OS/sample files are forbidden in CI artifact'}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: P030-Windows-Original-ROM-LOCAL-QA-TOOLS-NO-MEDIA
+          path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
