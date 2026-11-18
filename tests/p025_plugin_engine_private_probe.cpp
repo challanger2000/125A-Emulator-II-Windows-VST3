@@ -176,10 +176,14 @@ void privateOriginal(const std::filesystem::path& rom,const std::filesystem::pat
 }
 int main(int argc,char** argv){
     try{
+        if(argc==4&&std::string_view(argv[1])=="--private-only"){
+            privateOriginal(argv[2],argv[3]);
+            return 0;
+        }
         synthetic();
         if(argc==3)privateOriginal(argv[1],argv[2]);
         else if(argc!=1){
-            std::cerr<<"usage: p025_plugin_engine_private_probe [local-rom-folder local-original-floppy]\n";
+            std::cerr<<"usage: p025_plugin_engine_private_probe [local-rom-folder local-original-floppy] or --private-only rom floppy\n";
             return 2;
         }
         return 0;
