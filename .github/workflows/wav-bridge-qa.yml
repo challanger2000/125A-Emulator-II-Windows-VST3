@@ -33,6 +33,11 @@ jobs:
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/wav_firmware_controller_tests.cpp -o /tmp/wav_firmware_controller_tests
       - name: Verify normal, timeouts, overload, insufficient RAM and cancel gates
         run: /tmp/wav_firmware_controller_tests
+      - name: Compile original firmware DISK7 SAVE BANK control-state tests
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/bank_save_controller_tests.cpp -o /tmp/bank_save_tests
+      - name: Verify exact panel flow and incomplete/corrupt saving gates
+        run: /tmp/bank_save_tests
       - name: Compile P004 original-bank project codec
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/portable_state_tests.cpp -o /tmp/portable_state_tests
