@@ -33,5 +33,8 @@ public:
         floppyBytes_=floppyReceived;hddBytes_=hddReceived;
         return originalSampling||transfer;
     }
+private:
+    bool ready_=false,seeded_=false;
+    std::uint64_t floppyBytes_=0,hddBytes_=0;
 };
 } // namespace eii::portable
