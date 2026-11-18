@@ -55,6 +55,9 @@ jobs:
           python3 tools/apply-p022-boot-services.py
           python3 tools/apply-p024-midi-ready.py --verify
           python3 tools/apply-p024-midi-ready.py
+          python3 tools/apply-p028-eii-default.py --verify
+          python3 tools/apply-p028-eii-default.py
+          python3 tests/p028_default_filter_tests.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
           python3 tests/p011_source_acceptance.py
@@ -266,6 +269,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P024 original MIDI ready preflight failed" }
           python tools/apply-p024-midi-ready.py
           if ($LASTEXITCODE -ne 0) { throw "P024 original MIDI ready integration failed" }
+          python tools/apply-p028-eii-default.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P028 original EII default source preflight failed" }
+          python tools/apply-p028-eii-default.py
+          if ($LASTEXITCODE -ne 0) { throw "P028 original EII default source integration failed" }
+          python tests/p028_default_filter_tests.py
+          if ($LASTEXITCODE -ne 0) { throw "P028 original EII default behavior/source regression failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
