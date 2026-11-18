@@ -16,7 +16,7 @@ for k in (
     'void handoffAutonomousBoot(bool playable){',
     'bool advanceAutonomousBoot(){',
     'runTicks(portable::AutonomousBootTimeline::quantum(nonlinear()));',
-    'if(presetDisplayed()){',
+    'if(originalPlayable()){',
     'handoffAutonomousBoot(true)',
     'handoffAutonomousBoot(false)',
     'anchorHostPosLocal_=base;',
@@ -30,8 +30,8 @@ for k in (
 ):
     assert k in e,"P021 original boot integration missing: "+k
 a=e[e.index('bool advanceAutonomousBoot()'):e.index('bool quitRequested()')]
-assert a.index('events_.pop()') < a.index('if(presetDisplayed())')
-assert a.index('if(presetDisplayed())') < a.index('runTicks(portable::AutonomousBootTimeline::quantum(nonlinear()));')
+assert a.index('events_.pop()') < a.index('if(originalPlayable())')
+assert a.index('if(originalPlayable())') < a.index('runTicks(portable::AutonomousBootTimeline::quantum(nonlinear()));')
 assert 'const auto target=tickOf(hostTarget_' not in a
 assert 'machine_->run(' not in a, "original hardware only advances through same runTicks pipeline"
 b=e[e.index('void handoffAutonomousBoot('):e.index('bool advanceAutonomousBoot()')]
