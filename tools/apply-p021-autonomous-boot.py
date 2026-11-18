@@ -220,10 +220,10 @@ def patch(e,i,r,v):
         "bounded independent original boot and reanchor handshake")
 
     e=one(e,
-        '''        s.recallProgram=recallProgram_.load();s.recallPending=recallPending_;''',
-        '''        s.recallProgram=recallProgram_.load();s.recallPending=recallPending_;
-        s.autonomousBoot=autonomousBoot_.active();
-        s.bootMidiDiscarded=bootMidiDiscarded_.load(std::memory_order_relaxed);''',
+        '''        // Real wall time vs virtual original 4 MHz clock; a stopped host''',
+        '''        s.autonomousBoot=autonomousBoot_.active();
+        s.bootMidiDiscarded=bootMidiDiscarded_.load(std::memory_order_relaxed);
+        // Real wall time vs virtual original 4 MHz clock; a stopped host''',
         "host-readable status for autonomous original bootstrap")
 
     e=one(e,
