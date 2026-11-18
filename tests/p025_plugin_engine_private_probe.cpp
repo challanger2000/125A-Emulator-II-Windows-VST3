@@ -167,6 +167,75 @@ void privateOriginal(const std::filesystem::path& rom,const std::filesystem::pat
     need(s.halted==false,"original machine halted during host audio/MIDI playback");
     std::cout<<"P025 PRIVATE ORIGINAL ROM 4MHZ -> REAL PATCHED VST3 ENGINE -> "
              <<"DAW PCM AUDIO HANDOFF: PASS\n";
+
+    // P027: production reload into THE SAME PluginEngine after the first
+    // actual original Choir has played. No DAW audio callbacks while the
+    // original machine starts again. This catches stale host audio rings,
+    // MIDI events, guest/host clock anchors and preboot silence regressions.
+    const double firstPeak=peak,firstEnergy=energy;
+    const auto rebootStart=Clock::now();
+    e.boot(settings,true);
+    bool enteredReboot=false;
+    while(Clock::now()-rebootStart<15s){
+        std::this_thread::sleep_for(50ms);
+        s=e.status();
+        if(s.autonomousBoot){enteredReboot=true;break;}
+        if(s.halted)break;
+    }
+    std::cout<<"P027_REBOOT_STARTED "<<label(s)
+             <<" wall="<<std::chrono::duration<double>(Clock::now()-rebootStart).count()
+             <<"s\n";
+    need(enteredReboot,"second original firmware boot never entered autonomous mode");
+    assertSilentDuringBoot(e); // previous original note must not leak
+    const std::array<std::uint8_t,3> ignoredPreboot{0x90,62,127};
+    e.queueMidi(0,ignoredPreboot.data(),3); // must be discarded while ROM boots
+    bool secondReady=false;
+    while(Clock::now()-rebootStart<240s){
+        std::this_thread::sleep_for(75ms);
+        s=e.status();
+        if(s.boot.complete&&s.boot.stage==eii::portable::BootStage::Ready&&
+           !s.autonomousBoot){secondReady=true;break;}
+        if(s.halted)break;
+    }
+    std::cout<<"P027_SECOND_ORIGINAL_BOOT "<<label(s)
+             <<" wall="<<std::chrono::duration<double>(Clock::now()-rebootStart).count()
+             <<"s\n";
+    need(secondReady,"second full original ROM startup failed to reach Pxx+MIDI");
+    need(s.bootMidiDiscarded>=1,
+         "MIDI sent during second boot must not become a stuck new performance note");
+    need(s.boot.virtualTicks>10000000,
+         "second original ROM restart did not execute actual full 4MHz firmware");
+
+    std::uint64_t activeAgain=0;
+    double peakAgain=0,energyAgain=0;
+    e.queueMidi(0,noteOn.data(),3);
+    for(int i=0;i<330;++i){
+        if(i==200)e.queueMidi(0,noteOff.data(),3);
+        e.render(l.data(),r.data(),512,true);
+        for(int j=0;j<512;++j){
+            const auto a=std::max(std::abs(l[j]),std::abs(r[j]));
+            if(a>1.e-8f)++activeAgain;
+            peakAgain=std::max(peakAgain,double(a));
+            energyAgain+=double(l[j])*l[j]+double(r[j])*r[j];
+        }
+    }
+    s=e.status();
+    std::cout<<"P027_SECOND_ORIGINAL_AUDIO nonzero="<<activeAgain
+             <<" peak="<<std::setprecision(12)<<peakAgain
+             <<" energy="<<energyAgain
+             <<" first_peak="<<firstPeak<<" first_energy="<<firstEnergy
+             <<" total_callbacks="<<s.callbacks
+             <<" total_underruns="<<s.underruns
+             <<" dropped_preboot_midi="<<s.bootMidiDiscarded
+             <<"\n";
+    need(activeAgain>2000&&peakAgain>0.001,
+         "audio after second original firmware boot vanished or stale buffer poisoned playback");
+    need(s.underruns==0,"second actual original-ROM offline DAW output underrun");
+    need(!s.halted,"machine halted during second audio playback");
+    need(energyAgain>firstEnergy*0.2&&energyAgain<firstEnergy*5,
+         "second original instrument sound energy differs wildly from same preset");
+    std::cout<<"P027 SAME VST3 PLUGINENGINE FULL ORIGINAL ROM/CHOIR REBOOT + "
+             <<"MIDI AFTER PXX + DAW PCM AUDIO RECOVERY: PASS\n";
 }
 }
 int main(int argc,char** argv){
