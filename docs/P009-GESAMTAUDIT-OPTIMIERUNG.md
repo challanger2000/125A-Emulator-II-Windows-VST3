@@ -1,0 +1,87 @@
+# 125A Emulator II VST3 – P009: Systematische Gesamtprüfung und Modernisierungsplan
+
+**Datum:** 18.11.2026 · **Ausgangsbasis:** P008 `develop/p008-safe-wav-import-20261118` (`775646946e62c38434a6ff9ac3cf5166d503e0f8`), gepinnter Originalkern `Tuth/eii-emu@e345bcf00af8a066ebace9168cf0b6c3a40ca164`.
+
+**Prüfart:** Direkte Auswertung der aktuellen, nach P008 angewendeten C++-Implementierung (Hardware, VST3, GUI, Dateiformate, Zustandsverwaltung), GitHub-Actions-Build-/Hostprotokolle, privater Firmware-Testlogs, vorhandener Studio-One-Screenshots; zusätzliche ausführbare synthetische HDD-Formatprüfung. **Keine Behauptung eines vollständigen interaktiven Studio-One-Tests oder einer bitgenauen Originalhardware-Abnahme sämtlicher Funktionen.** Originale ROMs/OS werden niemals in öffentliche Repositories oder CI geladen.
+
+## 1. Kurzurteil
+
+Die ursprüngliche Emulator-II-Hardware ist mit mehreren Klangmodellen, originaler Firmware, SAMPLER/SAR, Disketten-/HDD-Emulation und einem realen Windows-VST3 funktionsfähig. **Die größten Produktprobleme sind nicht neue Filteralgorithmen, sondern (a) Daten-/Projektzustände, (b) Originalgeschwindigkeiten bei Lade-/Speichervorgängen, (c) Medien-/HDD-Einrichtung, (d) Bedienbarkeit und eindeutige Original-/Custom-Modi.** Fortschritte P003–P008 sollten erhalten, nicht durch einen Neuanfang ersetzt werden.
+
+### Bestätigte positive Nachweise
+
+- GitHub Actions `44308098847`: Windows x64 und native Linux-Testjobs **PASS**; Steinberg Validator **47/47**; tatsächliche VST3-COM-Projektzustandsprobe **PASS**. Das ist keine Studio-One-Endabnahme.
+- Privat mit Original-ROM/OS3.1: 3-s-/440-Hz-WAV über echte Firmware SAMPLE/FORCE/STOP, vollständiges DISK7 SAVE BANK, bank-only Projektzustand, Wiedergabe nach neuer Emulator-Instanz mit **439,998 Hz**. Die Originaldateien blieben unverändert.
+- Die P008-Beschleunigung des *Komforts* (vorübergehend automatisch eine geschützte OS-Diskette einlegen) und das Bewahren einer zuvor committed WAV-Bank nach `Eject` sind implementiert und für den Fall **ohne ursprünglich eingelegte Floppy** nativ getestet.
+- Der Benutzer bestätigt den WAV-Import in Studio One und den direkten Boot einer `.EII`-Chorbank. Das ersetzt keine systematische Bank-/HDD-/Mehrfachinstanzprüfung.
+
+## 2. Priorisierte technische Befunde
+
+| ID | Schwere | Thema | Nachweis und Konsequenz | Maßnahme / Abnahmekriterium |
+|---|---|---|---|---|
+| P0-01 | **kritisch** | Echte `.EII`-Bank und Studio-One-Recall | `plugin_engine.h::mountFloppyNow` verwaltet bei `.EII`-Mount nur Medienpfad; `projectBankSnapshot()` enthält nur nach WAV-DISK7 gespeicherte Banken. Nach `Eject` ist `settings.floppy` leer; ein neu gespeicherter Song hat beim Neustart möglicherweise keine Choir-Bank mehr. P008 schützt nur eine bereits committed WAV-Bank. | `.EII`-Bank bei nachweislich erfolgreicher Original-Firmware-Ladung in DAW-Zustand übernehmen oder klar warnen und explizite Snapshot-Speicherung ermöglichen; Test `.EII → Eject → Save → New Instance → Sound`. |
+| P0-02 | **hoch** | Projektspeicherung während Import | `eii_vst3.cpp::getState` liefert bei `projectSaveBusy()` sofort `kResultFalse` (Zeilen ~164–174). Ein Host muss diesen fehlgeschlagenen Save nicht wiederholen; die zuletzt gestartete Aufnahme wäre möglicherweise nicht im Song. | Sichtbarer Zustand `Import/Bank speichern – Song bitte danach erneut speichern`; robustes Commit-/Retry-Konzept; Studio-One-Autosave unter laufendem Import testen. |
+| P0-03 | **hoch** | Abbruch | `plugin_engine.h::cancelAutoWav()` ruft Fehler-/Release-Pfad; es wird kein zuverlässiger originaler STOP/SAMPLE/EXIT-Ablauf gefahren. Firmware kann in SAMPLE bleiben, OS-Diskette aus Sicherheitsgründen montiert. | Original-Firmware-sichere Cancel- und Recovery-Automatik, erzwungenes Reset nur als dokumentierte Notfalloption; Tests pro FSM-Phase und Device-Wechsel. |
+| P0-04 | **hoch** | Fehlender vollständiger Wechseltest | Die private P008-Abnahme begann mit **ausgeworfener** Diskette. Der kritischere Ablauf mit zuvor eingelegter EII Choir (read-only), automatisch eingelegtem OS31 und Wiederherstellung der vorigen Diskette wurde inzwischen im privaten Original-Firmware-Test positiv bestätigt. | Privater Original-ROM/OS31-Test am 18.11. bestätigte die Wiederherstellung der ursprünglichen read-only EII-Floppy nach DISK7. Nach Eject blieb die committed Projektbank (573440 B) erhalten. Studio-One-Recall dieser Variante bleibt offen. |
+| P0-05 | **hoch** | Manuelle Bankwechsel | `mountFloppyNow` verwirft eine ältere Projektbank bereits beim Einlegen einer nicht-OS-Datei, obwohl der EII zu diesem Zeitpunkt die zuvor geladene Bank noch im RAM haben kann. Umgekehrt werden HDD-/DISK-1/2-Ladevorgänge nicht automatisch in einen committed Projektbankzustand übertragen. | Snapshot-/RAM-Generation an nachweislich abgeschlossenen Firmware-Bank-Ladevorgang und SAVE-Transaktionen koppeln, nicht lediglich an Einlegen/Auswerfen. |
+| P1-01 | **sehr hoch** | Boot-Beschleunigung | `plugin_engine.h::advance` begrenzt jeden CPU-Lauf auf `tickOf(hostTarget_)` (ca. Zeilen 875–920). Maschine darf im normalen Modus nicht schneller fortschreiten als die Audio-Hostzeit. Privat gemessener OS31-Boot bis P01 ~**44,3 s emulierte Zeit**; Nutzer beobachtete ~130 s beim problematischen HDD-Boot. | Gezielter **Turbo-Boot** vor erster spielbereiter Bank, emulierte CPU-/Floppy-Zeit vollständig beibehalten, Ausgabe bis Freigabe sicher verwerfen, Hostzeit neu synchronisieren. Erst mit MIDI-/DAW-/State-/DSP-Negativtests. |
+| P1-02 | **sehr hoch** | Import-Beschleunigung | Privater 3-s-Test: Aufnahme-/Bankspeicherungsphase von ~44,365 bis ~119,735 emulierte Sekunden: **~75,37 s**, vorwiegend originale 137-Track-DISK7-Schreibsequenz. In Echtzeit-Konfiguration entsprechend lange Wartezeiten. | Firmware-Diskoperationen mit Turbo-Zeit, ohne zeitliche/klangliche Abkürzung des SAR; nach Import auf normale Host-Audiozeit re-ankern. Zwei Geschwindigkeiten getrennt benchmarken: Emulationsarbeit / Audio-Hostzeit. |
+| P1-03 | **hoch** | Audio-Latenz und Aussetzer | Nutzerstatus: **1866 Samples bei 44,1 kHz = 42,31 ms**, **10.173** kumulierte verspätete Frames, Machine-Load **63 %**, DSP-Load **18 %**. Die Zahlen sind Momentaufnahme; nicht jedem Frame entspricht zwingend hörbarer Dropout. | Reproduzierbare Studio-One-Soak-Tests (44,1/48/96 kHz, 64–1024 Block, 1/4/8 Instanzen) und Auswahl seriöser Sicherheitsmargen, adaptive Hintergrundlast; Anzeige für *seit letztem Reset* statt ausschließlich kumulativ. |
+| P1-04 | **hoch** | Sample-Grundnote | Firmware-Test bestätigt WAV-Originalhöhe **MIDI 48 = C2 in Studio One**; MIDI60 C3 = +12 Halbtöne. `autoImportWav` bietet keinen Keyroot-/Zone-Dialog. | Wahl `Root: C3/MIDI60` für neuen Import, umsetzbar über **originale Firmware-Voice-Definition**, optional `Original EII: C2/MIDI48`; Tastaturzonen und mehrere Samples erst nach korrekter Einzelton-Recall-Integration. |
+| P1-05 | **hoch** | HDD erstellen / importieren | `plugin_editor.h::Create blank 20 MB HDD` schreibt eine **Nullen-Datei**; danach muss erst HD-OS booten und `SPECIAL 22` formatieren. Synthetischer P009-C++-Test: **22.597.632 B, 46 Slots, 0 als frei markiert**, obwohl Bilddatei existiert. | Ein geführter HDD-Setup-Dialog: Erstellen → HD-OS bereitstellen → Firmware-Format → freien Platz anzeigen → Bankimport; blank/unformatiert früh als verständlichen Zustand kennzeichnen. |
+| P1-06 | **hoch** | HDD-Projekt-Recall | `portable::ProjectState` speichert nur ein 573.440-Byte-Floppy-Bankabbild, **kein 20-MB-HDD-Abbild**. HDD-Verwendung hängt von externer `.img`-Datei ab. | HDD-Dateipfad und Fingerprint überwachen, Änderungen sicher speichern, klare externe Medienabhängigkeit; optional expliziter Einzelbank-Export und Versionierung. |
+| P1-07 | **hoch** | Originaltreue-/Custom-Verwechslung | `plugin_state.h` hat 7 unterschiedlich klingende Audiomodelle: Original SSM2045, SSM2045 model 2, EIII Custom CEM3387, Legacy Q u.a. Letzter Studio-One-Status des Benutzers meldete **EIII CEM3387 – Custom**, somit keinen reinen EII-Signalweg. | Zwei gut sichtbare Betriebsarten: **Original EII** (reproduzierbarer SSM2045-/DAC-/Reconstruction-Referenzsatz) und **Custom/Experimentell** (eindeutig abweichende Klangmodelle). Bestehende Projekte nie unbemerkt umstellen. |
+| P1-08 | **mittel** | Bedienoberfläche und Status | `plugin_editor.h` enthält **58 `AppendMenuW`-Aufrufe**, neun Popup-Verwendungen und weit verzweigte technische Optionen unter SETTINGS/DEVICES; wichtiger Floppy/HDD/OS- und Arbeitsspeicherstatus ist in `Status...` versteckt. | Sichtbarer Media-Strip: Bankname, RAM, `Floppy: ... [Eject]`, `HDD: ...`, `Import WAV`, Fortschritt; technische Filter-/Bus-/Timingdetails in Advanced. Historischen Frontpanel-Charakter behalten. |
+| P1-09 | **mittel** | Import-Längenbeschränkung | 17,6 s ist der nominelle Oberwert. Mit echter Original-Firmware wurde **16,5 s erfolgreich**, **17,6 s vorzeitig voll** gemessen; restlicher RAM hängt von Stimmen ab. | Über originales Firmware-Sample-Memory-Display freie Zeit anzeigen, voraussichtliche Dauer und Ablehnung vor Aufnahme; Fail-closed-Truncation P007 behalten. |
+| P1-10 | **mittel** | Status und Fehlermeldungen | Zum Teil nur Firmware-LCD `This Will Take A While`, `Insert Diskette`; Status meldet Rohzahlen ohne Nutzeranweisung. | Zustands-/Fortschrittsanzeige `Boot → Bank laden → WAV aufnehmen → Bank sichern → bereit`, unterscheidet aktuelle Handlung von Host-Realtime-Problemen. |
+| P2-01 | **mittel** | `.EII`-Importkonsistenz | `floppy_image_backing.h` akzeptiert `.eii` mit **beliebiger Länge 1..494.592 B** und füllt auf, HDD-Import `importEiiNow` verlangt **exakt 485.887 B**. Potenziell verkürzte Dateien können beim direkten Floppy-Import stillschweigend als Bank behandelt werden. | Vor dem Mount streng nach dokumentierten originalen Bankvarianten validieren, ausdrücklichen Fehler für unvollständige Datei; beide Importpfade gemeinsam testen. |
+| P2-02 | **mittel** | WAV-Konvertierung | 8–384 kHz, PCM8/16/24/32 oder Float32, Mono/Stereo; Stereo wird zu Mono gemittelt, keinerlei Root-/Gain-/Normalisierungs-/Trim-Vorschau. Float außerhalb [-1,1] wird vollständig abgelehnt. | Vor dem Import kurze Anzeige `Originalformat → EII-ADC ~27,78kHz`, Mono-Downmix, Spitzenpegel, optional Trim und Start/End-Crop. Keine heimliche Pegeländerung/Normalisierung. |
+| P2-03 | **mittel** | Kurze WAVs / Looping | Privater P008-Test einer 1-s-Referenz erreichte Firmware-Save/Restore, jedoch keine über längeres Fenster stabile 440-Hz-Aggregatfrequenz. Ursache (Sample-Ende/Loop/Playback-FSM) ungeklärt, kein gesicherter Defekt. | Tonhöhen-, Loop-, One-Shot-, Release- und Stop-Verhalten bei 0,1/0,5/1/2/3/16 s über Waveform-/Audio-Hashes messen. |
+| P2-04 | **mittel** | Mehrinstanzen / DSP und Host | Native Tests, Validator und synthetische Projekttests existieren; keine umfassenden Studio-One-Soak- und gleichzeitigen HDD-Import-/Sample-Capture-Tests. Audio render() ist realtime ohne Allokationen; das Maschinen-/DSP-Modell nutzt zwei Threads. | DAW-Lebenszyklus: Insert/Remove/Copy/Paste/Undo, 1/4/8 Instanzen, Host-Stop/Play/Loop, online/offline Export, blockweise MIDI-/Controllerschübe. |
+| P2-05 | **niedrig** | Bibliothek/Archiv | Externe `.EII`/HDD-Library existiert, aber kein einheitlicher Bankbrowser mit Preset-Metadaten. | Dateibrowser/Bankliste später, *kein* zweiter vollwertiger Komfort-Sampler; `.125A`-Export nur bei echtem Mehrwert und verlässlichem Projekt-Recall. |
+
+### Evidenzgrenzen
+
+- **Quellcode bestätigt** Bedingungen und potenzielle Fehlerpfade, aber nicht immer die tatsächliche Reproduktion in Studio One.
+- **Native Original-ROM-Tests bestätigt:** konkreter Hardwarezustand für die dokumentierten Testbanken und WAVs, nicht beliebige Patch-/HDD-/Mehrfachinstanzen.
+- **Nutzerstatus:** kumulierte Audio-Underruns und aktuellen Filtermodus; keine Messung eines kontrollierten Benchmarks.
+- **Nicht durchgeführt:** echte kommerzielle Emulator-II-Hardware als vollständige Goldreferenz, große Arturia-/TAL-Doppelmessung, generelles Auditing aller 127 upstream Tests als Code-Review, Windows-Studio-One-GUI-Interaktion in der privaten Testumgebung.
+
+## 3. Technische Modernisierungsstrategie
+
+### A: Daten sichern statt Komfortfunktionen stapeln (P0)
+
+1. **Einheitliches Bank-Lebenszyklusmodell:** `RAM live`, `Disk mounted`, `Disk modified`, `Project bank committed` und `External bank referenced` als **fünf verschiedene Zustände**. Ein Floppy-`Eject` verändert nur Zustand 2, nicht 1 und 4.
+2. Projektzustand mit Version / CRC und **unveränderlichen Snapshots**; ein gespeicherter Song darf weder bei fehlender Fremddatei noch beim Eject stillschweigend leer werden. Eigene schreibbare OS- und HDD-Medien streng getrennt.
+3. Original-Firmware-Bankladen/Speichern ist die Quelle der Wahrheit. Optional eine *sichere* Snapshot-Operation anbieten, nicht das Sample-RAM beim Host-Save künstlich umschreiben.
+
+### B: Turbo für Boot und Original-Diskoperationen (P1)
+
+**Nicht einfach CPU-Takt auf 8 MHz stellen!** Das verändert die emulierte Hardware. Der korrekte Ansatz ist, `Machine::run()` schneller hintereinander auszuführen, aber `cpuRate=4.000.000 ticks/s`, SIO-/Floppyzeiten und DAC-Takt **unverändert in emulierter Zeit** zu lassen. Die Host-Audiowiedergabe wird während eines bewusst nichtspielbaren Vorgangs sicher getrennt bzw. stumm betrieben. Anschließend wird der Host-Takt atomar mit dem wieder spielbereiten Maschinenzustand synchronisiert. Das Design muss Offline-Render, bereits eingeplante MIDI-Events, Audio-DSP-Warteschlange, SAMPLE-ADC-Eingang und Editor/Shutdown berücksichtigen. Beschleunigung **nur bei sicheren Firmwarezuständen**, nicht während laufender MIDI-Stimmen oder live aufgenommenen Audios.
+
+**Messplan:** für jede Phase emulierte Sekunden, reale Millisekunden, Anzahl `Machine::run()`/Dsp-Blocks, Queue-Wartezeit und In/Out-Hashes erfassen. Vergleich Baseline versus Turbo bei identischem Original-ROM/OS und 3-/16-s-Referenz-WAVs. Kein Tempo-/Tonhöhenunterschied und keine verschwundenen Stimmen akzeptabel.
+
+### C: Eindeutige Originaltreue und moderne Bedienung
+
+- Zwei Startprofile: **Original EII** (Original-MIDI48/C2 und entsprechendes SSM2045-Modell mit echter DAC-/Reconstruction-Kette), **Comfort** (C3/MIDI60, Medien-Automatik, schneller Boot); klanglich identische Engine möglich, nur UI-/Steuerung unterschiedlich. **Custom/EIII** bleibt explizit eine dritte, klar markierte Klangabweichung.
+- Interne **Note-Root-/Keyzone-Umsetzung über Originalfirmware**, nicht über fest verdrahtete MIDI-Transposition; Grundstimmung/Verstimmung und Voice-Limits abgleichen.
+- Ein optisch gleichwertiges Frontpanel kann bleiben; ein kleines, modernes Media-/Import-Overlay mit aktuellen Banknamen, Fortschritt, RAM und Log reduziert die technische SETTINGS-Liste erheblich.
+- HDD-Assistent macht aus 5–7 Bedienhandlungen einen geführten, bestätigten Ablauf mit nicht-destruktiver Vorprüfung.
+
+## 4. Reihenfolge und verbindliche Testmatrix
+
+| Schritt | Priorität | Abnahme |
+|---|---|---|
+| P009-A Bank-Sicherheit | 1 | `.EII` und WAV jeweils `Import → Eject → Projekt Save → Fresh Instance → Audiohash`, zusätzlich Medienwechsel, HDD und fehlende externe Datei |
+| P009-B Fehlerpfade | 2 | Cancel in jeder Firmware-Capture-/Bank-Save-Phase; Stromausfall/Host-Close, beschädigte `.EII`/WAV/OS/HDD, zu wenig RAM; kein falscher Erfolg |
+| P010 Performance-Messung | 3 | Original-ROM-Boot/Floppy-Load/DISK7/WAV/HDD; reproduzierbare Wall-/Emu-Zeit, CPU-/DSP-Verbrauch, keine Dauer-/Pegel-/Tonhöhenänderung nach Turbo |
+| P011 Komfort & Noten | 4 | C2/C3 Root und Tastaturzone, Mehrfachbank, Preset Recall, eindeutiges Meter-/Statusverhalten im Projekt |
+| P012 Host-Praxistest | 5 | Studio One unter Windows 11: 44,1/48/96 kHz, 1/4/8 Instanzen, Offline-Bounce, Automationsrecall, Zoom, Reset und Audioaussetzer |
+| P013 Klangvergleich | 6 | EII-Samples identisch, SSM2045-Originalmodus, Arturia/TAL mit verifizierter Pitch/VCF/ADSR-/Level-Angleichung, Spektrum/Nulltests/Blind-A-B |
+
+**Freigaberegel:** Ein Test-Ergebnis ist nur dann bestanden, wenn die bezeichnete **tatsächliche** Schicht geprüft wurde: Quellcode ≠ Windows-Build ≠ Validator ≠ nativer Original-Firmware-Test ≠ Studio-One-Praxistest ≠ Originalhardware-Klangreferenz. Stand P008 ist kein Release und die oben offenen Gates bleiben offen.
+## 5. P009 private Original-Firmware-Prüfung mit eingelegter Choir-Bank
+
+Zusätzlich zum bisherigen Test ohne Floppy wurde der schwierige Fall mit tatsächlich eingelegter read-only EII Choir.EII geprüft: originaler OS31-Boot bis P01 bei etwa 44,3 emulierten Sekunden, Mount einer echten EII-Choir-Bank, 3-Sekunden-WAV durch originalen SAMPLE/SAR, automatisches DISK7 SAVE BANK mit 573440-Byte-Snapshot und anschließend automatische Wiederherstellung der **zuvor eingelegten originalen EII-Bank im read-only-Modus**. Die Firmware kehrte bei 119,72 emulierten Sekunden zu P01 zurück. Ein danach explizit ausgeführtes Eject behielt den committed Projektbank-Snapshot. Der gepackte Zustand hatte 577303 Bytes.
+
+**PASS für den physikalischen Medienwechsel, P008 Auto-OS und Eject-Projektbank-Erhalt.** Diese gezielte Ergänzung ist keine eigenständige Studio-One-GUI- oder Mehrfachinstanz-Abnahme. Alle privaten Originalmedien blieben ausschließlich lokal, keine öffentliche GitHub-Datei enthält sie.
