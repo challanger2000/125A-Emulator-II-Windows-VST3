@@ -397,6 +397,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-negative"
           if ($LASTEXITCODE -ne 0) { throw "P030 synthetic invalid original-ROM negative control failed" }
+      - name: Verify P031 checksummed binary song media and fresh actual Windows VST3 recall
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-windows-binary-recall"
+          if ($LASTEXITCODE -ne 0) { throw "P031 actual COM binary media project recall regression failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
