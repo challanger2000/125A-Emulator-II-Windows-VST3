@@ -53,10 +53,52 @@ def patch(st,eng,vst):
         '        else if(key=="program")s.recallProgram=int(number(v));',
         "read and validate pending marker")
     eng=one(eng,
-        '        bankNeedsSnapshot_.store(false,std::memory_order_release);\n        post([this,s,bank]{',
-        '        bankNeedsSnapshot_.store(s.bankPendingCapture,std::memory_order_release);\n'
-        '        post([this,s,bank]{',
-        "publish song pending-bank marker before asynchronous restore")
+        '''        {std::lock_guard l(projectMediaMutex_);projectMedia_=bank;}
+        bankNeedsSnapshot_.store(false,std::memory_order_release);
+        post([this,s,bank]{''',
+        '''        // Publish an in-progress marker BEFORE replacing the bank;
+        // readers must never pair the OLD bank with a cleared marker.
+        bankNeedsSnapshot_.store(true,std::memory_order_release);
+        {std::lock_guard l(projectMediaMutex_);projectMedia_=bank;}
+        bankNeedsSnapshot_.store(s.bankPendingCapture,std::memory_order_release);
+        post([this,s,bank]{''',
+        "atomic restore bank and marker ordering")
+    eng=one(eng,
+        '''    bool projectNeedsBankCapture()const noexcept{
+        return bankNeedsSnapshot_.load(std::memory_order_acquire);
+    }''',
+        '''    bool projectNeedsBankCapture()const noexcept{
+        return bankNeedsSnapshot_.load(std::memory_order_acquire);
+    }
+    // One lock-linearized snapshot: VST3 state must never combine an OLD
+    // project bank with a "complete" marker from a newer commit.
+    struct ProjectSaveFrame{
+        std::shared_ptr<const std::vector<std::uint8_t>> bank;
+        bool pending=false;
+    };
+    ProjectSaveFrame projectSaveFrame()const{
+        std::lock_guard l(projectMediaMutex_);
+        return {projectMedia_,
+            projectBusy_.load(std::memory_order_acquire)||
+            bankNeedsSnapshot_.load(std::memory_order_acquire)};
+    }''',
+        "linearized host-state bank plus marker")
+    eng=one(eng,
+        '''            embeddedBank_.reset();
+            {std::lock_guard l(projectMediaMutex_);projectMedia_.reset();}
+            bankNeedsSnapshot_.store(true,std::memory_order_release);''',
+        '''            bankNeedsSnapshot_.store(true,std::memory_order_release);
+            embeddedBank_.reset();
+            {std::lock_guard l(projectMediaMutex_);projectMedia_.reset();}''',
+        "mark manual media change pending before invalidating bank")
+    eng=one(eng,
+        '''                embeddedBank_.reset();
+                {std::lock_guard l(projectMediaMutex_);projectMedia_.reset();}
+                bankNeedsSnapshot_.store(true,std::memory_order_release);''',
+        '''                bankNeedsSnapshot_.store(true,std::memory_order_release);
+                embeddedBank_.reset();
+                {std::lock_guard l(projectMediaMutex_);projectMedia_.reset();}''',
+        "mark boot media candidate pending before invalidating bank")
     eng=one(eng,
         '''            if(s.autoBoot&&!s.romFolder.empty())bootNow(false,true);
             else projectBusy_.store(false,std::memory_order_release);''',
@@ -82,10 +124,11 @@ def patch(st,eng,vst):
     vst=one(vst,
         '''            const auto b=engine_?engine_->projectBankSnapshot():nullptr;
             const auto settingsText=eii::vst::serializeSettings(settings());''',
-        '''            const auto b=engine_?engine_->projectBankSnapshot():nullptr;
+        '''            const auto frame=engine_?engine_->projectSaveFrame():
+                eii::vst::PluginEngine::ProjectSaveFrame{};
+            const auto b=frame.bank;
             auto current=settings();
-            current.bankPendingCapture=engine_&&
-                (engine_->projectSaveBusy()||engine_->projectNeedsBankCapture());
+            current.bankPendingCapture=frame.pending;
             const auto settingsText=eii::vst::serializeSettings(current);''',
         "transactional last-committed-bank plus pending marker")
     return st,eng,vst
