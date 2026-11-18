@@ -54,8 +54,7 @@ def patch(e,v):
             midiTools_.wheelBridge=c.midiWheels;''',
         "start stopwatch at original machine boot")
     e=one(e,
-        '''        s.recallProgram=recallProgram_.load();s.recallPending=recallPending_;
-        if(samplingTrace_.recording()){''',
+        '''        if(samplingTrace_.recording()){''',
         '''        s.recallProgram=recallProgram_.load();s.recallPending=recallPending_;
         // Real wall time vs virtual original 4 MHz clock; a stopped host
         // target is distinct from slow firmware disk transfers or CPU load.
