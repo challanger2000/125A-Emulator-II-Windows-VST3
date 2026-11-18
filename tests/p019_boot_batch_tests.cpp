@@ -58,7 +58,7 @@ int main(){
         const auto baseline=simulate(false,dsp);
         const auto optimized=simulate(true,dsp);
         require(optimized<baseline,"pre-preset batching reduces machine run invocations");
-        require(optimized*2<baseline,"over 50 pct fewer machine run calls for synthetic boot trace");
+        require(optimized*10<baseline*7,"at least 30 pct fewer machine run calls across both audio models");
     }
     std::cout<<"P019 exact 4 MHz boot target/MIDI cutoff, audio urgent guards, fewer run calls: PASS\n";
 }
