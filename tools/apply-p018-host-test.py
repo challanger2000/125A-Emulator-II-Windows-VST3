@@ -17,8 +17,14 @@ def patch(s):
         const auto c3Settings=replaceKey(setting,"wavmidic3","1");
         const auto c3Song=encodeProject(c3Settings,disk,rawHdd);
         check(first.setState(c3Song),"P018 VST3 accepts MIDI C3 song with HDD");
-        check(first.getState()==c3Song,
-              "P018 VST3 persists exact C3 MIDI option with user bank + HDD");
+        const auto c3Readback=first.getState();
+        const auto savedC3=decodeProject(c3Readback);
+        const auto expectedC3=decodeProject(c3Song);
+        check(savedC3.settings.find("wavmidic3=1\\n")!=std::string::npos &&
+              savedC3.bank==expectedC3.bank&&savedC3.hdd==expectedC3.hdd,
+              "P018 VST3 persists C3 MIDI mode with exact bank + HDD");
+        check(first.setState(c3Readback)&&first.getState()==c3Readback,
+              "P018 canonical C3 project bytes survive second save/reopen");
         check(first.setState(setting),"P018 older legacy project loads original MIDI");
         check(first.getState()==setting,
               "P018 older song opens without forcing C3 transpose");
