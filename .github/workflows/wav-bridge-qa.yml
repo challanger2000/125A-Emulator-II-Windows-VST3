@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,9 +23,16 @@ jobs:
           python3 tools/apply-wav-auto.py
           python3 tools/apply-project-state.py --verify
           python3 tools/apply-project-state.py
+          python3 tools/apply-bundled-resources.py --verify
+          python3 tools/apply-bundled-resources.py
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
+      - name: Compile bundled ROM/OS path regression
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/bundled_resources_tests.cpp -o /tmp/bundled_resources_tests
+      - name: Verify private ROM/OS bundle discovery and moved-project path repairs
+        run: /tmp/bundled_resources_tests
       - name: Compile native C++23 WAV-to-SAR-input tests
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src -I upstream/eii-emu/src tests/wav_input_tests.cpp -o /tmp/wav_input_tests
@@ -74,6 +81,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P004 preflight failed" }
           python tools/apply-project-state.py
           if ($LASTEXITCODE -ne 0) { throw "P004 application failed" }
+          python tools/apply-bundled-resources.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P006 resource preflight failed" }
+          python tools/apply-bundled-resources.py
+          if ($LASTEXITCODE -ne 0) { throw "P006 resource patch failed" }
           python tools/apply-vst3-state-host-test.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
           python tools/apply-vst3-state-host-test.py
