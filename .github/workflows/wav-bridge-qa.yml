@@ -136,7 +136,7 @@ jobs:
       - name: Compile and run REAL patched PluginEngine with synthetic original 4MHz ROM, no DAW callbacks, and 10-bus silence
         run: |
           mkdir -p artifact-p025-private-engine
-          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp tests/p025_plugin_engine_private_probe.cpp -o artifact-p025-private-engine/p025_plugin_engine_private_probe
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp tests/p025_plugin_engine_private_probe.cpp -o artifact-p025-private-engine/p025_plugin_engine_private_probe
           ./artifact-p025-private-engine/p025_plugin_engine_private_probe
           test -x artifact-p025-private-engine/p025_plugin_engine_private_probe
       - uses: actions/upload-artifact@v4
