@@ -157,7 +157,7 @@ jobs:
       - name: Build private original-ROM first-Pxx/PCM test runner (NO private media in CI)
         run: |
           mkdir -p artifact-private-boot-probe
-          g++ -std=c++23 -O3 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/p023_original_rom_boot_probe.cpp -o artifact-private-boot-probe/original_eii_private_boot_probe
+          g++ -std=c++23 -O3 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp tests/p023_original_rom_boot_probe.cpp -o artifact-private-boot-probe/original_eii_private_boot_probe
           test -x artifact-private-boot-probe/original_eii_private_boot_probe
           ! find artifact-private-boot-probe -type f -name '*.bin' -o -name '*.emuiifd' | grep -q .
       - uses: actions/upload-artifact@v4
