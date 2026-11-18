@@ -71,20 +71,16 @@ def patch(e,v):
         if(samplingTrace_.recording()){''',
         "publish original boot diagnostic only on machine owner")
     v=one(v,
-        '''          <<L"\\nEmulated "<<double(s.panel.ticks)/4e6<<L" s, speed "<<int(s.panel.speedRatio*100+.5)<<"%"''',
-        '''          <<L"\\nEmulated "<<double(s.panel.ticks)/4e6<<L" s, speed "<<int(s.panel.speedRatio*100+.5)<<"%"''',
-        "unused check") if False else v
-    v=one(v,
-        '''         <<L"\\nEmulated "<<double(s.panel.ticks)/4e6<<L" s, speed "<<int(s.panel.speedRatio*100+.5)<<"%"''',
-        '''         <<L"\\nEmulated "<<double(s.panel.ticks)/4e6<<L" s, speed "<<int(s.panel.speedRatio*100+.5)<<"%"
-         <<L"\\nFirmware boot: "<<wide(portable::bootStageName(s.boot.stage))
+        '<<L"\\nLate frames (realtime underruns): "',
+        '''<<L"\\nFirmware boot: "<<wide(portable::bootStageName(s.boot.stage))
          <<L"\\nBoot wall / virtual: "<<double(s.boot.wallMs)/1000.0
          <<L" s / "<<double(s.boot.virtualTicks)/4e6<<" s"
          <<L"; effective boot speed "<<double(s.boot.realtimePermille)/10.0<<"%"
          <<L"\\nHost audio clock inactive: "<<double(s.boot.hostInactiveMs)/1000.0
          <<L" s; machine inactive: "<<double(s.boot.emulatorInactiveMs)/1000.0<<" s"
-         <<L"; floppy / HDD bytes during boot: "<<s.boot.floppyBytes<<" / "<<s.boot.hddBytes''',
-        "show honest paused DAW vs firmware boot stage in Status")
+         <<L"; floppy / HDD bytes during boot: "<<s.boot.floppyBytes<<" / "<<s.boot.hddBytes
+         <<L"\\nLate frames (realtime underruns): "''',
+        "show host vs emulated clock diagnostics before existing performance stats")
     return e,v
 
 def main():
