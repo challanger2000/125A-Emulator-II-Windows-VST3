@@ -17,16 +17,27 @@ for x in ('bankNeedsSnapshot_.store(s.bankPendingCapture,std::memory_order_relea
           'SONG REOPENED WITH UNSAVED EII BANK',
           'Capture via original DISK 7, then save the song again.'):
     has(engine,x)
-for x in ('current.bankPendingCapture=engine_&&',
-          'engine_->projectSaveBusy()||engine_->projectNeedsBankCapture()',
+for x in ('const auto frame=engine_?engine_->projectSaveFrame():',
+          'const auto b=frame.bank;',
+          'current.bankPendingCapture=frame.pending;',
           'const auto settingsText=eii::vst::serializeSettings(current);',
           'eii::portable::encode(settingsText,*b)'):
     has(component,x)
+has(engine,'ProjectSaveFrame projectSaveFrame()const')
+has(engine,'std::lock_guard l(projectMediaMutex_);\n        return {projectMedia_,')
+has(engine,'projectBusy_.load(std::memory_order_acquire)||')
+has(engine,'bankNeedsSnapshot_.load(std::memory_order_acquire)};')
 fragment=component[component.index('tresult PLUGIN_API getState(IBStream* stream)override{',
                                     component.index('class Plugin final')):
                    component.index('// ---- IAudioProcessor ----')]
 assert 'if(engine_&&(engine_->projectSaveBusy()||engine_->projectNeedsBankCapture()))return kResultFalse;' not in fragment
-assert fragment.index('current.bankPendingCapture=engine_&&') < fragment.index('const auto settingsText=')
-assert fragment.index('const auto b=engine_?engine_->projectBankSnapshot()') < fragment.index('current.bankPendingCapture=')
+assert fragment.index('const auto frame=engine_?engine_->projectSaveFrame():') < fragment.index('const auto settingsText=')
+assert fragment.index('const auto b=frame.bank;') < fragment.index('current.bankPendingCapture=frame.pending;')
+r=engine[engine.index('void restoreProjectBank('):engine.index('    // UI file decoding is complete',engine.index('void restoreProjectBank('))]
+assert r.index('bankNeedsSnapshot_.store(true') < r.index('projectMedia_=bank;') < r.index('bankNeedsSnapshot_.store(s.bankPendingCapture')
+m=engine[engine.index('std::string mountFloppyNow('):engine.index('static std::filesystem::path recoveryFolder()')]
+assert m.index('bankNeedsSnapshot_.store(true') < m.index('projectMedia_.reset()')
+b=engine[engine.index('void bootNow(bool discard,bool fromState)'):engine.index('    // ---- input ----')]
+assert b.index('bankNeedsSnapshot_.store(true') < b.index('projectMedia_.reset()')
 assert fragment.count('return kResultFalse;')==1, "Only actual stream I/O should report failed getState"
 print("P014 persistent pending-bank host getState/source safety PASS")
