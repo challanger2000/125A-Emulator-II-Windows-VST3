@@ -22,7 +22,7 @@ def one(s,a,b,name):
     return s.replace(a,b,1)
 
 def patch(e,v,c):
-    for mark in ("cancelWavStep()", "canonicalEiiBankSize", "commitSelectedBank(",
+    for mark in ("cancelWavStep()", "inspectHdd", "commitSelectedBank(",
                  "projectSaveBusy()", "restoreWavOriginalFloppy()"):
         if mark not in e:raise RuntimeError("P013 requires P012/P011/P010/P008: "+mark)
     if "saveCurrentBankInProject()" in e:raise RuntimeError("P013 already applied")
@@ -51,12 +51,6 @@ def patch(e,v,c):
             bankNeedsSnapshot_.store(true,std::memory_order_release);
             oldSampleSource_=sampleSource_;autoWavSource_=source;''',"WAV changes live bank generation")
 
-    e=one(e,'''    void cancelAutoWav(){
-        post([this]{''', '''    void cancelAutoWav(){
-        post([this]{''',"guard source unchanged") if False else e
-    e=one(e,'''    void cancelAutoWav(){
-        post([this]{''', '''    void cancelAutoWav(){
-        post([this]{''',"no-op") if False else e
     e=one(e,'    void cancelAutoWav(){',
         '''    // Explicit, original-firmware-backed current-RAM bank snapshot.
     // Not started by mounting media: loading can happen later and the
