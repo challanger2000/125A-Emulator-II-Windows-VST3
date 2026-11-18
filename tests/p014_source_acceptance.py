@@ -15,18 +15,23 @@ for x in ('bool bankPendingCapture=false;',
 for x in ('bankNeedsSnapshot_.store(s.bankPendingCapture,std::memory_order_release);',
           'if(s.bankPendingCapture){',
           'SONG REOPENED WITH UNSAVED EII BANK',
-          'Capture via original DISK 7, then save the song again.'):
+          'original DISK 7 must'):
     has(engine,x)
 for x in ('const auto frame=engine_?engine_->projectSaveFrame():',
           'const auto b=frame.bank;',
           'current.bankPendingCapture=frame.pending;',
           'const auto settingsText=eii::vst::serializeSettings(current);',
-          'eii::portable::encode(settingsText,*b)'):
+          'const auto settingsText=eii::vst::serializeSettings(current);'):
     has(component,x)
 has(engine,'ProjectSaveFrame projectSaveFrame()const')
 has(engine,'std::lock_guard l(projectMediaMutex_);\n        return {projectMedia_,')
 has(engine,'projectBusy_.load(std::memory_order_acquire)||')
-has(engine,'bankNeedsSnapshot_.load(std::memory_order_acquire)};')
+if 'projectHdd_,hddNeedsSnapshot_' in engine:
+    has(engine,'bankNeedsSnapshot_.load(std::memory_order_acquire),')
+    has(component,'eii::portable::encodeProject(settingsText,')
+else:
+    has(engine,'bankNeedsSnapshot_.load(std::memory_order_acquire)};')
+    has(component,'eii::portable::encode(settingsText,*b)')
 fragment=component[component.index('tresult PLUGIN_API getState(IBStream* stream)override{',
                                     component.index('class Plugin final')):
                    component.index('// ---- IAudioProcessor ----')]
