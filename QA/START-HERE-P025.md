@@ -9,16 +9,29 @@ guest-to-host clock re-anchor, offline block processing, event queue,
 
 P025 adds a single QA-only Linux binary that includes the **same
 fully patched P008–P024 plugin_engine.h** built by the Windows VST3.
-The public CI runs it against a synthetic Z80 NOP ROM and exercises:
+The public CI runs it against an intentionally invalid, synthetic
+Z80 NOP ROM as a **negative control**:
 
-- Real original 4 MHz machine clock progress with **zero host process
-  callbacks** while the real plugin owner is active.
-- All 10 audio outputs (main stereo + 8 firmware individual outputs)
-  stay strictly silent before a genuinely playable Pxx+SCN2651 state.
-- MIDI before boot-ready is dropped, never sent at the wrong song time.
-- The synthetic ROM never fakes success, Pxx or a playable preset.
-- The binary is uploaded separately as a QA fixture; the final user
-  installation remains one normal VST3.
+- The real production controller catches the expected conflicting RFD
+  bus drivers at CPU tick 1. This is **not** a valid firmware boot.
+- The VST3 Engine correctly reports the original hardware exception,
+  rather than hiding it behind a generic timeout, and does not fake Pxx.
+- All 10 audio outputs (main stereo and 8 individual) remain zero.
+- The QA executable is delivered separately from the single Windows
+  VST3, with absolutely no licensed ROM or floppy content.
+
+**The positive, real 4 MHz DAW-independent firmware test was executed
+privately with the user's genuine E-mu ROM and Choir disk: PASS.**
+Actual full PluginEngine boot reaches Pxx **and enabled MIDI receiver**
+in **53.88 seconds** with ZERO host callbacks; original NoteOn/NoteOff
+then produces **166,085 nonzero PCM frames** through actual PluginEngine
+48-kHz offline DAW render, peak **1.27293050289**, **zero offline
+underruns**, with 328 host audio callbacks. Total elapsed wall time
+(including audio rendering) **57.32 seconds**. This is not a claim that
+real-time buffer underruns under Studio One are absent.
+
+For the numerical evidence without copyrighted firmware/media, see
+`QA/P025-PRIVATE-ORIGINAL-ENGINE-RESULT.txt`.
 
 The same standalone QA executable can be run **in the local private
 environment only** with the previously recovered genuine
