@@ -34,7 +34,11 @@ w=e[e.index("void saveCurrentBankInProject()"):e.index("void cancelAutoWav()")]
 assert w.index("host::FloppyImageBacking os") < w.index("installFloppy(*machine_,temporary)")
 assert w.index("installFloppy(*machine_,temporary)") < w.index("manualBankCommit_=true;")
 assert "saveCopy" not in w and "write(" not in w
-need(c,"engine_->projectSaveBusy()||engine_->projectNeedsBankCapture()")
+if "projectSaveFrame()" in c:
+    need(e,"ProjectSaveFrame projectSaveFrame()const")
+    need(c,"current.bankPendingCapture=frame.pending;")
+else:
+    need(c,"engine_->projectSaveBusy()||engine_->projectNeedsBankCapture()")
 need(v,'Aktuelle RAM-Bank mit original DISK 7 im Song sichern')
 need(v,'case 25:e.saveCurrentBankInProject();break;')
 need(v,'LIVE RAM NOT SAVED')
