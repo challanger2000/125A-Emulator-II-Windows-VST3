@@ -17,3 +17,7 @@ The source-pinned local build overlay tools/apply-project-state.py adds original
 The VST3 component now serializes its original settings and original-sized project media through the P004 binary envelope. Parsing and checksum precede state mutation; a fresh original EII machine boots embedded media using an in-memory backing, with no extracted temporary floppy, and original ROM paths still required. Project getState rejects calls while a firmware WAV/write transaction is in flight, preventing half-saved banks.
 
 **Acceptance pending CI/actual fresh VST3 host:** source-pinned patch compilation, the factory IBStream state roundtrip, actual P004 save inside VST3 (previous private P004 save+fresh reload was executed at original native Machine level), and final Studio One project save/reopen. Treat all of these as OPEN until recorded separately.
+
+## P004 complete private original-ROM acceptance
+
+Native original-ROM owner-engine end-to-end and loaded Windows COM state tests have now passed. See [P004-PRIVATE-FIRMWARE-PROJECT-ACCEPTANCE.md](P004-PRIVATE-FIRMWARE-PROJECT-ACCEPTANCE.md); last specific CI gate [44284743913](https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44284743913). Studio One user-host and final product QA still open.
