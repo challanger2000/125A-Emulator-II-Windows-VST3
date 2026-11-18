@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118', 'develop/p016-bounded-silence-rebase-20261118', 'develop/p017-portable-hdd-song-state-20261118', 'develop/p018-wav-c3-midi-keyboard-20261118', 'develop/p019-original-boot-batch-scheduling-20261118', 'develop/p020-boot-clock-diagnostics-20261118', 'develop/p021-original-firmware-independent-boot-20261118', 'develop/p022-autoboot-disk-midi-safety-20261118', 'develop/p024-original-midi-ready-boot-handoff-20261118', 'develop/p025-plugin-engine-original-boot-audio-20261118']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118', 'develop/p016-bounded-silence-rebase-20261118', 'develop/p017-portable-hdd-song-state-20261118', 'develop/p018-wav-c3-midi-keyboard-20261118', 'develop/p019-original-boot-batch-scheduling-20261118', 'develop/p020-boot-clock-diagnostics-20261118', 'develop/p021-original-firmware-independent-boot-20261118', 'develop/p022-autoboot-disk-midi-safety-20261118', 'develop/p024-original-midi-ready-boot-handoff-20261118', 'develop/p025-plugin-engine-original-boot-audio-20261118', 'develop/p026-windows-com-audio-lifecycle-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -309,6 +309,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P018 C3 VST3 host preflight failed" }
           python tools/apply-p018-host-test.py
           if ($LASTEXITCODE -ne 0) { throw "P018 C3 VST3 host test patch failed" }
+          python tools/apply-p026-com-audio-test.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P026 real Windows COM audio test preflight failed" }
+          python tools/apply-p026-com-audio-test.py
+          if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM audio test integration failed" }
+          python tests/p026_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
         shell: pwsh
         run: |
@@ -336,6 +342,13 @@ jobs:
           if (-not (Test-Path $probe)) { throw "VST3 host probe missing" }
           & $probe $bundle "unused" "unused" "unused" "project-state"
           if ($LASTEXITCODE -ne 0) { throw "Real COM VST3 project bank state roundtrip failed" }
+      - name: Verify real Windows VST3 COM realtime audio callbacks, invalid-ROM fault isolation and teardown
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "windows-audio-safety"
+          if ($LASTEXITCODE -ne 0) { throw "P026 Windows real VST3 COM audio/lifecycle acceptance failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
@@ -348,11 +361,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P025.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P026.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P025-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P026-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
