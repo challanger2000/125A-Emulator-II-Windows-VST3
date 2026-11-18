@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118'
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118']
   workflow_dispatch:
 permissions:
   contents: read
