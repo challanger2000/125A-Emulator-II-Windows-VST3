@@ -1,7 +1,7 @@
 name: WAV input bridge (non-release)
 on:
   pull_request:
-    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118']
+    branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118']
   workflow_dispatch:
 permissions:
   contents: read
@@ -37,12 +37,15 @@ jobs:
           python3 tools/apply-p013-live-bank-snapshot.py
           python3 tools/apply-p014-host-save-safety.py --verify
           python3 tools/apply-p014-host-save-safety.py
+          python3 tools/apply-p015-media-observer.py --verify
+          python3 tools/apply-p015-media-observer.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
           python3 tests/p011_source_acceptance.py
           python3 tests/p012_source_acceptance.py
           python3 tests/p013_source_acceptance.py
           python3 tests/p014_source_acceptance.py
+          python3 tests/p015_source_acceptance.py
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
@@ -62,6 +65,10 @@ jobs:
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/p014_project_save_tests.cpp -o /tmp/p014_project_save_tests
           /tmp/p014_project_save_tests
+      - name: Verify original firmware floppy/HDD read activity observer
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/p015_live_media_watch_tests.cpp -o /tmp/p015_live_media_watch_tests
+          /tmp/p015_live_media_watch_tests
       - name: Compile bundled ROM/OS path regression
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips tests/bundled_resources_tests.cpp -o /tmp/bundled_resources_tests
@@ -143,6 +150,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P014 preflight failed" }
           python tools/apply-p014-host-save-safety.py
           if ($LASTEXITCODE -ne 0) { throw "P014 integration failed" }
+          python tools/apply-p015-media-observer.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P015 source preflight failed" }
+          python tools/apply-p015-media-observer.py
+          if ($LASTEXITCODE -ne 0) { throw "P015 original firmware read monitor patch failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
@@ -155,6 +166,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P013 source integration acceptance failed" }
           python tests/p014_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P014 source integration acceptance failed" }
+          python tests/p015_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P015 source integration acceptance failed" }
           python tools/apply-vst3-state-host-test.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P004 host test preflight failed" }
           python tools/apply-vst3-state-host-test.py
@@ -202,11 +215,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P014.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P015.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P014-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P015-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
