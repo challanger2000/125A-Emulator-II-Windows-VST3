@@ -1,0 +1,22 @@
+name: WAV input bridge (non-release)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-wav:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Check pinned upstream and patch anchors
+        run: python3 tools/apply-wav-bridge.py --verify
+      - name: Compile native C++23 WAV-to-SAR-input tests
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src -I upstream/eii-emu/src tests/wav_input_tests.cpp -o /tmp/wav_input_tests
+      - name: Test positive, negative and firmware-input activation cases
+        run: /tmp/wav_input_tests

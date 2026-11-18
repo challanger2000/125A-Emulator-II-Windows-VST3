@@ -1,0 +1,3 @@
+[submodule "upstream/eii-emu"]
+	path = upstream/eii-emu
+	url = https://github.com/Tuth/eii-emu.git
