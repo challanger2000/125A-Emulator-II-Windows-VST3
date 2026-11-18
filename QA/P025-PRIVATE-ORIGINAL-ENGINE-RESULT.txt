@@ -1,0 +1,67 @@
+P025 – PRIVATE ORIGINAL EMULATOR II: REAL PATCHED PLUGINENGINE ACCEPTANCE
+=====================================================================
+Date: 2026-11-18
+Source: public CI Linux QA executable built in GitHub Actions run
+  https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44376808446
+Public CI artifact: P025-Linux-Patched-PluginEngine-Private-Audio-Probe-NO-ROM
+All original firmware / instrument files existed and were accessed only
+inside the user's private local container, never in GitHub.
+
+Exact executable invocation:
+  p025_plugin_engine_private_probe --private-only <private ROM folder> <private Choir floppy>
+
+Original media: main.bin, scanner.bin, ic135.bin, ic137.bin and
+  EII Choir - Emulator II.emuiifd. No media bytes stored in this result.
+
+REAL ENGINE BOOT OUTPUT:
+  PRIVATE_ORIGINAL_PLUGIN_BOOT
+  stage: Original firmware displays playable Pxx
+  wall boot diagnostic: 53,823 ms
+  original virtual hardware ticks: 177,300,000
+  original hardware virtual time: 44.325 s
+  DAW render callbacks during boot: ZERO (not simulated)
+  live original UART ready: YES (P024 gating)
+  preboot MIDI dropped: 0
+  original startup exception: none
+  outer wall timing: 53.8796 s
+
+REAL HOST AUDIO HANDOFF:
+  Actual PluginEngine.queueMidi(0, NoteOn 60 velocity 100)
+  Actual PluginEngine.render() with 48,000 Hz,
+    512-frame OFFLINE host audio callbacks, repeated 330 times
+  Actual PluginEngine.queueMidi(0, NoteOff 60)
+  Host frames processed: 168,960
+  Host callbacks: 328 as published when status queried
+  Nonzero host output frames: 166,085
+  Audio peak: 1.27293050289
+  Audio energy: 17766.104987
+  Offline host audio underruns: 0
+  Host engine owner-lag metric at end: 45.33325 ms
+  Total wall including offline MIDI/audio playback: 57.319482909 s
+  QA executable exit code: 0
+  P025 PRIVATE ORIGINAL ROM 4MHZ -> REAL PATCHED VST3 ENGINE
+  -> DAW PCM AUDIO HANDOFF: PASS
+
+PUBLIC NEGATIVE CONTROL / SAFETY TEST:
+  An intentionally invalid synthetic all-NOP ROM causes a real
+  production-controller RFD bus-driver conflict at original CPU tick 1.
+  The PluginEngine preserves the true hardware exception, fails closed,
+  never reports a playable Pxx, and renders zeros on main stereo +
+  eight aux outputs. This fixture is NOT a positive firmware boot test.
+  See latest P025 native Linux CI for PASS.
+
+WINDOWS CI / HOST STATUS:
+  https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44377172366
+  Linux original-machine/PluginEngine negative control CI: PASS
+  Windows x64 VST3 build: PASS
+  Steinberg validator: 47 passed, 0 failed
+  Real COM VST3 IBStream project bank/HDD state probe: PASS (0 failures)
+
+LIMITATIONS:
+  Private original-ROM positive test executes the exact patched
+  C++ VST3 PluginEngine on native Linux, not Studio One or Windows COM.
+  Offline audio underruns zero does not establish real-time performance.
+  It does not yet verify Windows Studio One project/reopen, multi-instance,
+  live capture, latency under load, host realtime scheduling, nor audible
+  sound following an actual Windows VST3 host instance.
+  No private ROM, disk, PCM, or emulator machine binary distributed.
