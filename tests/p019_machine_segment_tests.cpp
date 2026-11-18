@@ -5,6 +5,7 @@
 #include "machine.h"
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -17,6 +18,7 @@ void req(bool b,const char* why){if(!b){std::cerr<<"FAIL P019 hardware: "<<why<<
 struct Result{
     std::uint64_t ticks=0,reads=0,conversions=0,unknown=0,dramReads=0,dramWrites=0;
     std::uint16_t pc=0,scannerPc=0;
+    double wallMs=0; // native wall stopwatch, NOT virtual EII time
     std::array<std::uint8_t,512> sample{};
 };
 Result run(std::uint64_t batch){
@@ -41,13 +43,16 @@ Result run(std::uint64_t batch){
         wave.mono[i]=float(.25*std::sin(2*pi*1000*double(i)/48000));
     auto src=std::make_shared<eii::wav::Source>(std::move(wave));
     m->sampleInput=src;
+    const auto first=std::chrono::steady_clock::now();
     for(std::uint64_t t=0;t<total;){
         const auto step=std::min(batch,total-t);
         m->run(step);
         t+=step;
     }
     req(src->started(),"synthetic original hardware started analog SAMPLE");
-    Result r;r.ticks=m->ticks;r.reads=m->sampleReads;
+    const auto elapsedMs=std::chrono::duration<double,std::milli>(
+        std::chrono::steady_clock::now()-first).count();
+    Result r;r.wallMs=elapsedMs;r.ticks=m->ticks;r.reads=m->sampleReads;
     r.conversions=m->sampleSar.conversions;
     r.unknown=m->sampleUnknownReads;
     r.dramReads=m->dramReadCycles;r.dramWrites=m->dramWriteCycles;
@@ -66,6 +71,10 @@ void compare(const Result& a,const Result& b,const char* label){
         "main and scanner Z80 program counters identical");
     req(a.sample==b.sample,"512 original Z80 INI DRAM sample bytes bit-identical");
     std::cout<<"P019 hardware segment "<<label<<" exact original Z80/SAR/DRAM PASS\n";
+    std::cout<<"P020 synthetic machine throughput "<<label<<": "
+             <<b.wallMs<<" ms wall per "<<b.ticks<<" original ticks, "
+             <<(b.ticks/4000.0)/b.wallMs*100.0
+             <<"% real-time (single sample; CI host dependent, no actual ROM)\n";
 }
 } // namespace
 int main(){
