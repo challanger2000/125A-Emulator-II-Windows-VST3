@@ -53,8 +53,8 @@ def patch(f,e,v):
         '''AppendMenuW(hdd,MF_STRING,21,L"Create UNFORMATTED 20 MB HDD... (SPECIAL 22 needed)")''',
         "honest media label")
     v=one(v,
-        '''ask(L"Blank HDD created and selected.\n\nSelect the HD OS floppy, Boot / reset (main23.bin), then use SPECIAL 22 to format it.",L"HDD",MB_ICONINFORMATION);''',
-        '''ask(L"UNFORMATTED HDD created and selected.\n\nUsable bank slots: 0 of 46 until the original firmware formats it.\n\n1. Boot the original HD OS 3.1 (main23.bin).\n2. Run SPECIAL 22 FORMAT in the original Emulator II.\n3. Only then import .EII banks.\n\nThe image is not ready for banks yet.",L"HDD setup",MB_ICONINFORMATION);''',
+        r'''ask(L"Blank HDD created and selected.\n\nSelect the HD OS floppy, Boot / reset (main23.bin), then use SPECIAL 22 to format it.",L"HDD",MB_ICONINFORMATION);''',
+        r'''ask(L"UNFORMATTED HDD created and selected.\n\nUsable bank slots: 0 of 46 until the original firmware formats it.\n\n1. Boot the original HD OS 3.1 (main23.bin).\n2. Run SPECIAL 22 FORMAT in the original Emulator II.\n3. Only then import .EII banks.\n\nThe image is not ready for banks yet.",L"HDD setup",MB_ICONINFORMATION);''',
         "HDD clear setup steps")
     return f,e,v
 
