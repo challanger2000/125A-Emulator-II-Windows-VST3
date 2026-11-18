@@ -54,7 +54,7 @@ def main():
             }
             if(!source||source->durationTicks()==0||
                source->durationTicks()>wav::FirmwareCapture::maxDuration){
-                error_="125A WAV: current first-stage limit is 10 seconds.";return;
+                error_="WAV exceeds EII bank max (17.6 s); previously loaded voices reduce free time.";return;
             }
             const auto lcd=machine_->lcd.line(0);
             if(lcd.size()<3||lcd[0]!='P'||lcd[1]<'0'||lcd[1]>'9'||lcd[2]<'0'||lcd[2]>'9'){
@@ -146,11 +146,11 @@ def main():
 
     v=replace_once(v,
        'AppendMenuW(menu,MF_STRING,740,L"125A: WAV als SAMPLE-Eingang vorbereiten...");',
-       'AppendMenuW(menu,MF_STRING,740,L"125A: WAV automatisch aufnehmen...");',
+       'AppendMenuW(menu,MF_STRING,740,L"125A: Import WAV...");',
        "menu start")
     v=replace_once(v,
        'AppendMenuW(menu,MF_STRING,741,L"125A: WAV-Sample-Eingang deaktivieren");',
-       'AppendMenuW(menu,MF_STRING,741,L"125A: Aufnahme abbrechen");',
+       'AppendMenuW(menu,MF_STRING,741,L"125A: Import abbrechen");',
        "menu cancel")
     start='                auto source=eii::wav::loadSource(file);'
     end='            }catch(const std::exception& ex){'

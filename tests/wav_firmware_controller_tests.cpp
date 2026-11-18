@@ -44,7 +44,38 @@ int main(){
     f.reset();f.begin(0,s);
     a=f.advance(h,"Sample Overload","",0,false,0,true);
     req(a.completed&&!a.success,"clipping is not success");
-    a=f.begin(0,11*s);
-    req(a.completed&&!a.success,"duration too long is rejected before panel touch");
+    // No artificial 10-second restriction: accept up to one original bank.
+    a=f.begin(0,12*s);
+    req(!a.completed&&a.action==CaptureAction::SampleDown,"12-second WAV accepted");
+    a=f.begin(0,FirmwareCapture::maxDuration);
+    req(!a.completed&&a.action==CaptureAction::SampleDown,"17.6-second WAV accepted");
+    a=f.begin(0,FirmwareCapture::maxDuration+1);
+    req(a.completed&&!a.success,"above 17.6 seconds rejected");
+    // Original firmware may finish early if voices already occupy RAM.
+    // A successful LCD must never mean a truncated WAV was imported.
+    f.reset();f.begin(0,12*s);
+    f.advance(h,"P01","",0,false,0,false);
+    f.advance(2*s,"VOICE V01","",0,false,0,true);
+    f.advance(2*s+h,"VOICE V01","",0,false,0,true);
+    f.advance(3*s,"VOICE V01","",123,true,3*s,true);
+    a=f.advance(8*s,"Sample is good","",12345,true,3*s,true);
+    req(a.completed&&!a.success&&a.error,"early memory-full auto-stop rejected");
+    // At the physical bank limit the firmware may stop naturally near
+    // the end of the WAV, before the automatic STOP key would be pressed.
+    f.reset();f.begin(0,FirmwareCapture::maxDuration);
+    f.advance(h,"P01","",0,false,0,false);
+    f.advance(2*s,"VOICE V01","",0,false,0,true);
+    f.advance(2*s+h,"VOICE V01","",0,false,0,true);
+    f.advance(3*s,"VOICE V01","",10,true,3*s,true);
+    a=f.advance(3*s+FirmwareCapture::maxDuration-FirmwareCapture::endTolerance/2,
+                "Sample is good","",490000,true,3*s,true);
+    req(a.action==CaptureAction::SampleDown&&f.phase()==CapturePhase::ExitHeld,
+        "natural full-bank completion accepted when source is complete");
+    a=f.advance(3*s+FirmwareCapture::maxDuration+2*h,
+                "P01 NULL PRESET","",490000,true,3*s,false);
+    req(a.action==CaptureAction::SampleUp,"natural stop exit key released");
+    a=f.advance(3*s+FirmwareCapture::maxDuration+3*h,
+                "P01 NULL PRESET","",490000,true,3*s,false);
+    req(a.completed&&a.success,"natural full-bank end returns to preset");
     std::cout<<"125A original-firmware SAMPLE/FORCE/STOP/preset controller: PASS\n";
 }

@@ -24,11 +24,15 @@ class FirmwareCapture {
 public:
     static constexpr std::uint64_t ticksPerSecond=4000000ull;
     static constexpr std::uint64_t holdTicks=ticksPerSecond/10; // 100 ms debounce
-    static constexpr std::uint64_t maxDuration=10*ticksPerSecond; // preliminary 512KiB bound
+    // Original E-mu EII OS 3.1 manual: 17.6 s per performance bank.
+    // The 1-MiB expansion is two separately addressable 512-KiB banks.
+    // Actual FREE time is determined by the original firmware and voices.
+    static constexpr std::uint64_t maxDuration=176*ticksPerSecond/10;
+    static constexpr std::uint64_t endTolerance=ticksPerSecond/20; // 50 ms
     CaptureStep begin(std::uint64_t tick,std::uint64_t durationTicks)noexcept {
         reset();
         if(durationTicks==0||durationTicks>maxDuration)
-            return fail("WAV length not supported in P003 (0..10 seconds only).");
+            return fail("WAV exceeds the Emulator II single-bank limit of 17.6 seconds.");
         duration_=durationTicks;phase_=CapturePhase::SampleHeld;
         deadline_=tick+holdTicks;
         return {CaptureAction::SampleDown};
@@ -57,6 +61,8 @@ public:
             if(tick>=deadline_){phase_=CapturePhase::AwaitFirstRead;deadline_=tick+2*ticksPerSecond;return {CaptureAction::ForceUp};}
             break;
         case CapturePhase::AwaitFirstRead:
+            if(contains(lcd0,"Sample is good")||contains(lcd1,"Sample is good"))
+                return fail("Firmware ended recording before the WAV input started.");
             if(sourceStarted&&reads>baselineReads_){
                 phase_=CapturePhase::Recording;
                 deadline_=sourceStartTick+duration_+ticksPerSecond/20; // 50 ms silent tail
@@ -64,6 +70,14 @@ public:
             } else if(tick>=deadline_)return fail("Original firmware did not start reading ADC after FORCE.");
             break;
         case CapturePhase::Recording:
+            // Near capacity the original firmware can stop by itself before
+            // the synthetic STOP key. Never accept a prematurely truncated WAV.
+            if(contains(lcd0,"Sample is good")||contains(lcd1,"Sample is good")){
+                if(tick+endTolerance<sourceStartTick+duration_)
+                    return fail("Insufficient free EII sample RAM: firmware ended before WAV completion.");
+                phase_=CapturePhase::ExitHeld;deadline_=tick+holdTicks;
+                return {CaptureAction::SampleDown};
+            }
             if(tick>=deadline_){
                 if(reads<=baselineReads_)return fail("ADC never delivered sample bytes.");
                 phase_=CapturePhase::StopHeld;deadline_=tick+holdTicks;return {CaptureAction::StopDown};
