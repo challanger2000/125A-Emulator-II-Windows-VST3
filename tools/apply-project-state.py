@@ -43,7 +43,7 @@ def main():
 
     eng=one(eng,
         '#include "125a_firmware_capture.h"',
-        '#include "125a_firmware_capture.h"\n#include "125a_bank_save.h"',
+        '#include "125a_firmware_capture.h"\n#include "125a_bank_save.h"\n#include "125a_portable_state.h"',
         "owner SAVE BANK include")
     eng=one(eng,
         '    std::string wavStatus_="Idle";',
