@@ -54,7 +54,7 @@ int main(){
     rejects([&]{decodeProject(broken);},"truncated RLE payload");
     broken=newSong;broken.push_back('x');
     rejects([&]{decodeProject(broken);},"trailing HDD bytes");
-    broken=newSong;broken[24]=0;
+    broken=newSong;broken[24]^=1; // force HDD byte count off the 512-byte sector boundary
     rejects([&]{decodeProject(broken);},"bogus HDD declared sectors");
     broken=newSong;broken[28]=char(255);
     rejects([&]{decodeProject(broken);},"bogus packed HDD size");
