@@ -122,13 +122,8 @@ def patch(e,t):
         // Drain host preboot audio input''',
         "preserve original HD boot order and DAW automation while freewheeling")
 
-    t=one(t,
-        'static constexpr std::uint64_t maxBootWallMs=90000;',
-        '''// User's prior original-ROM start exceeded 130 s in the DAW. Do
-    // not force this independent boot into a stopped host timeline after
-    // only 90 s. The 300 s hard limit is an error fallback, never success.
-    static constexpr std::uint64_t maxBootWallMs=300000;''',
-        "allow real original slow OS startup without false 90-second completion")
+    if "static constexpr std::uint64_t maxBootWallMs=300000;" not in t:
+        raise RuntimeError("P022 must preserve 300-second watchdog supplied by the canonical timeline")
     return e,t
 
 def main():
