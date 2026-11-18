@@ -1,0 +1,42 @@
+name: Local-only original-firmware acceptance kit
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Verify locked source and install build-only overlays
+        run: |
+          python3 tools/apply-wav-bridge.py --verify
+          python3 tools/apply-wav-bridge.py
+          python3 tools/apply-wav-auto.py --verify
+          python3 tools/apply-wav-auto.py
+      - name: Assemble public-source offline probe kit (NO proprietary data)
+        run: |
+          mkdir -p artifact
+          tar -czf artifact/125A-EII-P003-open-source-probe.tar.gz \
+            -C upstream/eii-emu src vendor tests tools README.md LICENSE CMakeLists.txt
+          cp docs/P001-WAV-BRIDGE.md artifact/P003-TEST-CONTRACT.md
+          python3 - <<'PY'
+          import math,struct,wave,pathlib
+          name=pathlib.Path("artifact/125A-eii-private-440Hz-tone.wav")
+          with wave.open(str(name),"wb") as w:
+              w.setnchannels(1);w.setsampwidth(2);w.setframerate(48000)
+              w.writeframes(b"".join(struct.pack("<h",round(0.4*32767*math.sin(2*math.pi*440*i/48000))) for i in range(48000*3)))
+          print("Generated synthetic WAV for local firmware test:", name.stat().st_size, "bytes")
+          PY
+          find artifact -type f -printf '%f %s bytes\n'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: P003-PUBLIC-source-local-original-firmware-test-kit
+          path: artifact/
+          if-no-files-found: error
+          retention-days: 5
