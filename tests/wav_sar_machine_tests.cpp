@@ -49,7 +49,8 @@ Result capture(bool tone){
         req(d.known,"known analog DAC byte");
         iint-=(200*iint+10000*d.value)/10200;
         if(i>=256){low=std::min(low,iint);high=std::max(high,iint);
-            if(i>256&&(iint<0)!=(previous<0))++r.crossings;previous=iint;}
+            if(i>256&&(iint<0)!=(previous<0))++r.crossings;
+            previous=iint;}
     }
     r.pp=high-low;
     std::cout<<(tone?"tone":"silence")<<" Vpp="<<r.pp

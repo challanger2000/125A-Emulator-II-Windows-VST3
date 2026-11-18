@@ -27,7 +27,7 @@ jobs:
         run: /tmp/wav_input_tests
       - name: Compile original EII SAR/Z80/DRAM integration
         run: |
-          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/wav_sar_machine_tests.cpp -o /tmp/wav_sar_machine_tests
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I src -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp tests/wav_sar_machine_tests.cpp -o /tmp/wav_sar_machine_tests
       - name: Assert real SAR/DRAM PCM against silence negative control
         run: /tmp/wav_sar_machine_tests
 
