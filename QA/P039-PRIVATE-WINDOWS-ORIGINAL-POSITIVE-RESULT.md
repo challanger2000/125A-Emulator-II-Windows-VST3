@@ -24,7 +24,7 @@ The strict `QA/START-HERE-P037.md` contract requires **all eight** evidence gate
 - Owner-Windows cancellation, low-memory, disconnected input bus controls protecting the currently selected bank.
 - Full prescribed source/binary/ROM/media SHA-256 manifest, explicit guest IWAIT and DRAM address/segment-hash evidence, and a retained captured PCM waveform artifact.
 
-Those gates are **NOT VERIFIED**, not PASS. This also does not replace the future final Studio One acceptance.
+At the time of **P039**, those gates were **NOT VERIFIED** and were not counted as PASS. **Update 2026-11-19:** the later genuine original-ROM Windows P041 result independently passed the 44.1/48 kHz 1 kHz positives, changed 500 Hz, silent input and disconnected-input spectrum gates (see [P041 result](P041-PRIVATE-WINDOWS-ORIGINAL-MATRIX-RESULT.md)). This supersedes the relevant missing P039 matrix items, **but does not fulfill all P037 requirements**: cancellation / insufficient-RAM integrity evidence, guest IWAIT / DRAM changed-address proof and retained PCM reference are still unavailable from that submitted summary. Final Studio One acceptance also remains outstanding.
 
 No private ROMs, OS floppies, Choir banks, input recordings or user paths are committed. 
 
