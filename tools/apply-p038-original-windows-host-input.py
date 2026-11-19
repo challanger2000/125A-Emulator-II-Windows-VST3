@@ -74,7 +74,7 @@ def prepare():
     if(argc>5&&std::string(argv[5])=="original-windows-live-record"){
         // Windows x64 private local only. Real VST3 ProcessData, original
         // legally held ROM/OS image supplied in argv2/3; NEVER in public CI.
-        const auto result=p038WindowsOriginalRecording(factory,cid,host,rom,floppy);
+        const auto result=p038WindowsOriginalRecording(factory,cid,host,rom,floppy,argv[4]);
         module.reset();return result;
     }""",
         "owner-local Windows real original firmware acceptance entrypoint")
