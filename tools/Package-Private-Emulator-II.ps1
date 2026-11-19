@@ -8,6 +8,7 @@ param(
  [Parameter(Mandatory=$true)][string]$Destination
 )
 $ErrorActionPreference='Stop'
+$repoRoot=Split-Path -Parent $PSScriptRoot
 $plugin=Join-Path $BuiltPluginFolder 'EmulatorII-Custom.vst3/Contents/x86_64-win/EmulatorII-Custom.vst3'
 if(-not (Test-Path -LiteralPath $plugin -PathType Leaf)){throw "Missing built VST3: $plugin"}
 if(-not (Test-Path -LiteralPath $OsImage -PathType Leaf)){throw "Missing original OS image: $OsImage"}
@@ -46,6 +47,9 @@ try{
   if(Test-Path -LiteralPath $p -PathType Leaf){Copy-Item -LiteralPath $p -Destination (Join-Path $rom $name)}
  }
  Copy-Item -LiteralPath $OsImage -Destination (Join-Path $os ([IO.Path]::GetFileName($OsImage)))
+ # Ship original creator/third-party attribution and the applicable GPL text inside the VST3.
+ Copy-Item -LiteralPath (Join-Path $repoRoot 'CREDITS.md') -Destination (Join-Path $target 'Contents/Resources/PROJECT-CREDITS.md')
+ Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination (Join-Path $target 'Contents/Resources/LICENSE-GPL-3.0.txt')
  Write-Host "Private Emulator II VST3 ready: $target"
  Write-Host 'Copy the whole .vst3 folder to Common Files\VST3\Eigene while Studio One is closed.'
  Write-Host 'Do not distribute this owner-only package containing original E-mu firmware.'
