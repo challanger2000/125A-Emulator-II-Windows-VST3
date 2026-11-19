@@ -20,8 +20,8 @@ NEW='std::strncpy(info->name,"E-MU Emulator II",'
 def patch(s):
     if s.count(OLD)!=2:
         raise RuntimeError(f"P047 factory class name anchor: {s.count(OLD)} instead of 2")
-    if "eii::vst::processorUid" not in s:
-        raise RuntimeError("P047 original VST3 class CID missing")
+    if s.count("std::memcpy(info->cid,eii::vst::processorUid")!=2:
+        raise RuntimeError("P047 original two factory class CID declarations missing/changed")
     if 'std::strncpy(info->vendor,"Tamas (private)"' not in s:
         raise RuntimeError("P047 upstream vendor attribution unexpectedly changed")
     return s.replace(OLD,NEW)
