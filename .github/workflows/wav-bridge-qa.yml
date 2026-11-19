@@ -445,6 +445,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P040 original VST3 host matrix source anchors failed" }
           python tools/apply-p040-original-windows-matrix.py
           if ($LASTEXITCODE -ne 0) { throw "P040 original VST3 host matrix install failed" }
+          python tools/apply-p044-native-original-windows-matrix.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P044 original native VST3 host matrix anchors failed" }
+          python tools/apply-p044-native-original-windows-matrix.py
+          if ($LASTEXITCODE -ne 0) { throw "P044 original native DAC COM matrix install failed" }
+          python tests/p044_native_original_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P044 private original-ROM native DAC source contract failed" }
           python tests/p026_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
@@ -558,6 +564,15 @@ jobs:
           if ($LASTEXITCODE -ne 3) { throw "P040 false success/slow boot on missing original ROM/OS media" }
           Write-Host "P040 genuine-ROM absent case correctly BLOCKED (negative control PASS)"
           $global:LASTEXITCODE=0
+      - name: "P044 Windows native DAC VST3 COM negative - no original firmware is an explicit BLOCKED"
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-windows-native-p044-matrix"
+          if ($LASTEXITCODE -ne 3) { throw "P044 invalid/missing original media must report BLOCKED exit 3" }
+          Write-Host "P044 native=1 original-ROM missing-media NEGATIVE PASS (not genuine-ROM execution)"
+          $global:LASTEXITCODE=0
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
@@ -590,6 +605,9 @@ jobs:
           Copy-Item 'tools/START-P040-TEST.bat' 'artifact-p030-owner-qa/START-P040-TEST.bat'
           Copy-Item 'tools/START-P041-TEST.bat' 'artifact-p030-owner-qa/START-P041-TEST.bat'
           Copy-Item 'tools/P041-AutoLauncher.ps1' 'artifact-p030-owner-qa/P041-AutoLauncher.ps1'
+          Copy-Item 'tools/START-P044-TEST.bat' 'artifact-p030-owner-qa/START-P044-TEST.bat'
+          Copy-Item 'tools/Test-Private-Original-EII-P044-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P044-Windows.ps1'
+          Copy-Item 'QA/P043-DPCM-DAC-ROUTE-COMPARISON.md' 'artifact-p030-owner-qa/README-P043-DAC-MESSUNG.md'
           Copy-Item 'QA/START-HERE-P040.md' 'artifact-p030-owner-qa/README-P040.md'
           Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
