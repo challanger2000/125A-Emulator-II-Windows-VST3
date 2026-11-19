@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 static constexpr double pi=3.1415926535897932384626433832795;
@@ -69,6 +70,15 @@ static Capture capture(int rate,bool silence=false,int sampleQuantum=0){
             endTicks-elapsed;
         m->run(quantum); elapsed+=quantum;
     }
+    const auto diagnostic=m->report();
+    need(diagnostic.find("Original sample input 7-42/7-43:")!=std::string::npos,
+         "P036 actual Machine report must not falsely claim analog sample SAR absent");
+    need(diagnostic.find("sample-recording/SAR DRAM writes") == std::string::npos,
+         "P036 actual original SAR storage must not be listed as UNIMPLEMENTED");
+    need(diagnostic.find("SAR conversions=")!=std::string::npos &&
+         diagnostic.find("SAR WAIT clocks=")!=std::string::npos &&
+         diagnostic.find("analog input steps=")!=std::string::npos,
+         "P036 actual hardware recording diagnostics must expose conversion/wait/analog counters");
     Capture c;c.hostRate=rate;c.sarReads=m->sampleReads;
     c.conversions=m->sampleSar.conversions;c.waits=m->sampleWaitClocks;
     c.unknown=m->sampleUnknownReads;c.missing=src->missing.load();c.inputDrops=src->drops.load();
