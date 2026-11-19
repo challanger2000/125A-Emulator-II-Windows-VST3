@@ -35,15 +35,15 @@ int main(){
     // exact ROM+OS only; NO sample bank is to be auto-loaded.
     const auto factory=res/"Factory"/"EII-Choir.emuiifd";
     make(factory,573440);
-    eii::vst::PluginSettings clean;
-    bund::adopt(clean,res);
-    need(clean.romFolder==rom && clean.osImage==os && clean.floppy==os,
+    eii::vst::PluginSettings cleanBoot;
+    bund::adopt(cleanBoot,res);
+    need(cleanBoot.romFolder==rom && cleanBoot.osImage==os && cleanBoot.floppy==os,
          "P046 clean installation boots its own OS, not a bundled sound bank");
-    need(!clean.directImageWrites,"P046 original internal OS media is read-only");
+    need(!cleanBoot.directImageWrites,"P046 original internal OS media is read-only");
     // Even an incidental factory disk must not silently change startup.
-    eii::vst::PluginSettings preserved=clean;
+    eii::vst::PluginSettings preserved=cleanBoot;
     bund::adopt(preserved,res);
-    need(preserved==clean,"P046 bundled firmware startup remains stable");
+    need(preserved==cleanBoot,"P046 bundled firmware startup remains stable");
     // No factory sample bank is a required dependency.
     fs::remove(factory);
     eii::vst::PluginSettings noSamples;
