@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <utility>
+#include <filesystem>
 
 struct P040Case {
     const char* name;
@@ -203,6 +204,21 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
 static int p040WindowsOriginalAdversarial(
     const VST3::Hosting::PluginFactory& factory,const VST3::UID& cid,FUnknown* host,
     const std::string& rom,const std::string& os31,const std::string& choir){
+    // A no-media public CI invocation must not boot, create a fake PCM
+    // "positive" or wait for a 240-second original ROM deadline.
+    namespace fs=std::filesystem;
+    const fs::path dir(rom);
+    for(const auto name:{"main.bin","scanner.bin","ic135.bin","ic137.bin"}){
+        if(!fs::is_regular_file(dir/name)){
+            std::cout<<"P040 PRIVATE ORIGINAL MEDIA ABSENT/BLOCKED (expected in public CI)\n";
+            return 3;
+        }
+    }
+    if(!fs::is_regular_file(os31)||!fs::is_regular_file(choir)||
+       fs::file_size(os31)!=573440||fs::file_size(choir)!=573440){
+        std::cout<<"P040 ORIGINAL OS/CHOIR MEDIA MISSING OR BAD SIZE: BLOCKED\n";
+        return 3;
+    }
     std::optional<P040Metrics> tone48,tone44,half48,silence48,noBus;
     int failed=0;
     auto run=[&](const P040Case& tc)->std::optional<P040Metrics>{
