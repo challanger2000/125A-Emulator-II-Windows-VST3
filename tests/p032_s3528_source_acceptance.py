@@ -11,11 +11,19 @@ p032=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(p032)
 
 source=(ROOT/"upstream/eii-emu/src/vst3/eii_vst3.cpp").read_text(encoding="utf-8")
+# P045 deliberately changes the newly generated P032 nativeAudio assignment.
+# Verify P032's original S3528 patch after reversing ONLY the additive P045
+# first-run native-default overlay; keep the runtime product itself unchanged.
+p045spec=importlib.util.spec_from_file_location("p045",ROOT/"tools/apply-p045-native-dac-default.py")
+p045=importlib.util.module_from_spec(p045spec)
+p045spec.loader.exec_module(p045)
+assert source.count(p045.NEW)==1 and p045.OLD not in source
+p032Source=source.replace(p045.NEW,p045.OLD,1)
 settings=(ROOT/"upstream/eii-emu/src/vst3/plugin_state.h").read_text(encoding="utf-8")
 engine=(ROOT/"upstream/eii-emu/src/vst3/plugin_engine.h").read_text(encoding="utf-8")
 runtime=(ROOT/"upstream/eii-emu/src/nonlinear_voice.h").read_text(encoding="utf-8")
 host=(ROOT/"upstream/eii-emu/tools/vst3_host_test.cpp").read_text(encoding="utf-8")
-assert p032.NEW in source and p032.OLD not in source
+assert p032.NEW in p032Source and p032.OLD not in p032Source
 assert "s.audioMode=eii::analog::RuntimeAudioMode::Ssm2Chip;" in source
 assert "if(eii::vst::loadPluginDefaults(d))" in source
 assert "bool saveDefaults()override{return eii::vst::savePluginDefaults(settings());}" in source
@@ -33,12 +41,12 @@ assert 'settings=replaceKey(settings,"s3528","1");' in host, "owner-only ROM+Cho
 assert 'in.status("applieds3528")=="1"' in host, "owner test must check applied S3528"
 assert 'saved host state lost original EII reconstruction route' in host
 assert 'reopened original project state unexpectedly disabled S3528' in host
-assert p032.patch(source.replace(p032.NEW,p032.OLD,1))==source, "positive default patch mutation"
+assert p032.patch(p032Source.replace(p032.NEW,p032.OLD,1))==p032Source, "positive default patch mutation"
 for mutant in (
-    source,
-    source.replace("s.audioMode=eii::analog::RuntimeAudioMode::Ssm2Chip;",
+    p032Source,
+    p032Source.replace("s.audioMode=eii::analog::RuntimeAudioMode::Ssm2Chip;",
                    "s.audioMode=eii::analog::RuntimeAudioMode::EiiiCustom;",1),
-    source.replace("if(--initialized_==0){setHandler(nullptr);engine_.reset();}",
+    p032Source.replace("if(--initialized_==0){setHandler(nullptr);engine_.reset();}",
                    "if(--initialized_==0){eii::vst::savePluginDefaults(settings());setHandler(nullptr);engine_.reset();}",1),
 ):
     try:p032.patch(mutant)
