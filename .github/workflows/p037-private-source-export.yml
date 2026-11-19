@@ -1,0 +1,38 @@
+name: P037 private firmware harness source (NO MEDIA)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/p037-private-source-export.yml'
+      - 'tests/p037_original_firmware_recording.cpp'
+      - 'src/125a_firmware_capture.h'
+      - 'tools/apply-wav-auto.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source and pinned upstream
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Ensure no copyrighted firmware included
+        shell: bash
+        run: |
+          test ! -e 'upstream/eii-emu/roms/main.bin'
+          test ! -e 'upstream/eii-emu/roms/scanner.bin'
+      - name: Archive source only for owner-local private ROM validation
+        shell: bash
+        run: |
+          tar -czf p037-source-only.tar.gz \
+            --exclude=.git --exclude='*/.git' \
+            --exclude='*.bin' --exclude='*.emuiifd' --exclude='*.EII' \
+            --exclude='*.hfe' --exclude='*.raw' --exclude='*.wav' \
+            src tests tools upstream .gitmodules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p037-private-owner-local-source-NO-MEDIA
+          path: p037-source-only.tar.gz
+          retention-days: 1
