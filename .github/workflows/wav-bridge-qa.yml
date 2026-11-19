@@ -1,5 +1,7 @@
 name: WAV input bridge (non-release)
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main, 'develop/wav-import-v0.1.0', 'research/p005-bank-only-project-state-20261118', 'develop/p006-self-contained-resources-20261118', 'develop/p007-max-sample-duration-20261118', 'develop/p008-safe-wav-import-20261118', 'develop/p010-eii-project-bank-recall-20261118', 'develop/p011-firmware-safe-wav-cancel-20261118', 'develop/p012-eii-hdd-media-safety-20261118', 'develop/p013-verified-live-bank-snapshot-20261118', 'develop/p014-host-project-transaction-safety-20261118', 'develop/p015-live-firmware-media-activity-20261118', 'develop/p016-bounded-silence-rebase-20261118', 'develop/p017-portable-hdd-song-state-20261118', 'develop/p018-wav-c3-midi-keyboard-20261118', 'develop/p019-original-boot-batch-scheduling-20261118', 'develop/p020-boot-clock-diagnostics-20261118', 'develop/p021-original-firmware-independent-boot-20261118', 'develop/p022-autoboot-disk-midi-safety-20261118', 'develop/p024-original-midi-ready-boot-handoff-20261118', 'develop/p025-plugin-engine-original-boot-audio-20261118', 'develop/p026-windows-com-audio-lifecycle-20261118', 'develop/p027-original-rom-reboot-song-audio-20261118']
   workflow_dispatch:
@@ -67,6 +69,8 @@ jobs:
           python3 tools/apply-p045-native-dac-default.py
           python3 tools/apply-p047-eii-display-name.py --verify
           python3 tools/apply-p047-eii-display-name.py
+          python3 tools/apply-p048-eii-credits-menu.py --verify
+          python3 tools/apply-p048-eii-credits-menu.py
           python3 tools/apply-p033-original-midi-transmitter.py --verify
           python3 tools/apply-p033-original-midi-transmitter.py
           python3 tests/p033_source_acceptance.py
@@ -349,6 +353,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II factory class name preflight failed" }
           python tools/apply-p047-eii-display-name.py
           if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II VST3 actual factory class rename failed" }
+          python tools/apply-p048-eii-credits-menu.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P048 original developer About menu preflight failed" }
+          python tools/apply-p048-eii-credits-menu.py
+          if ($LASTEXITCODE -ne 0) { throw "P048 original developer About menu patch failed" }
           python tools/apply-p033-original-midi-transmitter.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P033 SCN2651 transmitter original Z80 source preflight failed" }
           python tools/apply-p033-original-midi-transmitter.py
@@ -449,6 +457,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P045 source and negative mutant acceptance failed" }
           python tests/p047_eii_name_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P047 factory name and VST3 package identity checks failed" }
+          python tests/p048_credits_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P048 attribution and package checks failed" }
           python tests/p032_s3528_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P032 original EII S3528 source and negative controls failed" }
           python tools/apply-p034-midi-out-host-test.py --verify
@@ -671,3 +681,20 @@ jobs:
           path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
+      - name: P048 package public ROM-free VST3 + full patched GPL corresponding source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bin = "upstream/eii-emu/build/win64-vst3/E-MU Emulator II.vst3/Contents/x86_64-win/E-MU Emulator II.vst3"
+          python tools/package-public-release.py --binary $bin --output artifact-public-p048
+          if ($LASTEXITCODE -ne 0) { throw "P048 public release / matching source packaging FAILED" }
+          $expected = @('125A-E-MU-Emulator-II-P048-PUBLIC-VST3-NO-ROM.zip', '125A-E-MU-Emulator-II-P048-CORRESPONDING-SOURCE.zip', 'SHA256SUMS.txt', 'RELEASE-NOTES-P048.md')
+          foreach ($name in $expected) {
+            if (-not (Test-Path -LiteralPath (Join-Path 'artifact-public-p048' $name) -PathType Leaf)) { throw "Missing P048 public asset: $name" }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: P048-E-MU-Emulator-II-PUBLIC-RELEASE-CANDIDATE-NO-ROM
+          path: artifact-public-p048/
+          if-no-files-found: error
+          retention-days: 30
