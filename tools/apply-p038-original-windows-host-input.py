@@ -67,7 +67,11 @@ def prepare():
     host=change_once(host,
         "    auto host=owned(new HostApplication());",
         """    auto host=owned(new HostApplication());
-    if(argc>5&&std::string(argv[5])=="original-windows-sar-qa-negative"){\n        const auto result=p038WindowsQaNegative(factory,cid,host);\n        module.reset();return result;\n    }\n    if(argc>5&&std::string(argv[5])=="original-windows-live-record"){
+    if(argc>5&&std::string(argv[5])=="original-windows-sar-qa-negative"){
+        const auto result=p038WindowsQaNegative(factory,cid,host);
+        module.reset();return result;
+    }
+    if(argc>5&&std::string(argv[5])=="original-windows-live-record"){
         // Windows x64 private local only. Real VST3 ProcessData, original
         // legally held ROM/OS image supplied in argv2/3; NEVER in public CI.
         const auto result=p038WindowsOriginalRecording(factory,cid,host,rom,floppy);
