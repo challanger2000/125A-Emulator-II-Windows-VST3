@@ -22,12 +22,12 @@ Windows VST3 Hosting::Module and factory** test executable used by P026/P029.
 Positive owner-local test (private licensed original ROM+Choir image):
 1. Validate the four authentic ROM sizes and original EII floppy input.
 2. Create an actual Windows VST3 component/processor, set actual IBStream
-   song state with EII \`model=5\` SSM2045 M2 96 kHz, DAC/S3528 off,
+   song state with EII \`model=5\` SSM2045 M2 96 kHz, DAC OFF and nominal S3528 ON (P032),
    then configure offline host 48 kHz/512.
 3. Boot fully autonomously with **zero host audio callbacks**. Wait for
    genuine original Pxx LCD and loaded bank, or fail on true hardware error
    and bounded 240-second boot timeout.
-4. Assert original filter actually applied; first pre-note buffers must
+4. Assert original SSM2045 and S3528 route actually applied; first pre-note buffers must
    be silent; note 60 On/Off routed through real VST3 ProcessData event list.
 5. Check every output sample finite, >2000 nonzero audio frames, peak
    >0.001, energy >1, original MIDI UART read activity, no DSP/event drops,
@@ -37,7 +37,8 @@ Positive owner-local test (private licensed original ROM+Choir image):
 7. Create a **fresh VST3** component with the saved host project state,
    boot original ROM/Choir again, play same MIDI and demand nonzero PCM
    and bounded energy relative to the first original performance.
-   This tests reloading the *same selected original floppy file*, not
+   P031 passes the checksummed original IBStream unchanged; P032 preserves the
+   S3528 ON setting. This tests reloading the *same selected original floppy file*, not
    disk independence after removing it.
 
 Public automated CI executes the same host mode with deliberately invalid
