@@ -52,7 +52,7 @@ static int p038WindowsQaNegative(const VST3::Hosting::PluginFactory& factory,
 }
 static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& factory,
     const VST3::UID& cid,FUnknown* host,const std::string& rom,
-    const std::string& os31) {
+    const std::string& os31,const std::string& choir) {
     using namespace eii::wav;
     using Clock=std::chrono::steady_clock;
     constexpr int block=512;
@@ -61,13 +61,14 @@ static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& fact
     p038Need(in.create(factory,cid,host),"cannot create real Windows VST3 COM instance");
     auto state=eii::portable::decodeProject(in.getState());
     auto settings=replaceKey(state.settings,"rom",rom);
-    settings=replaceKey(settings,"floppy",os31);
+    settings=replaceKey(settings,"floppy",choir);
     settings=replaceKey(settings,"osimage",os31);
     settings=replaceKey(settings,"memory1mb","0");
     settings=replaceKey(settings,"autoboot","1");
     settings=replaceKey(settings,"model","5");
     settings=replaceKey(settings,"native","0");
     settings=replaceKey(settings,"s3528","1");
+    p038Need(!choir.empty(),"original Choir floppy path is required for Pxx playback");
     p038Need(in.setState(eii::portable::encodeProject(settings,state.bank,state.hdd)),
              "cannot configure original ROM+OS3.1 VST3 state");
     p038Need(in.start(48000,kOffline,block),"Windows VST3 host ProcessData startup failed");
