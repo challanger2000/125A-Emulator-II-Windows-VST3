@@ -40,8 +40,8 @@ def patch_engine(s):
     std::atomic<std::uint64_t> originalMidiOutPreboot_{0};""",
         "owner->audio original MIDI output SPSC ring")
     s=one(s,
-        "    std::uint64_t hostPos_=0,consumerEpoch_=0,nextPull_=0;float gainNow_=1;",
-        """    std::uint64_t hostPos_=0,consumerEpoch_=0,nextPull_=0;float gainNow_=1;
+        "    std::uint64_t hostPos_=0,consumerEpoch_=0,nextPull_=0,consumerGeneration_=~std::uint64_t(0);float gainNow_=1;",
+        """    std::uint64_t hostPos_=0,consumerEpoch_=0,nextPull_=0,consumerGeneration_=~std::uint64_t(0);float gainNow_=1;
     midiout::Assembler originalMidiParser_;
     std::uint64_t originalMidiConsumerEpoch_=0,originalMidiConsumerGeneration_=0;""",
         "audio-only output MIDI message state")
