@@ -114,7 +114,9 @@ BLOCK=r'''
                     settings=replaceKey(settings,"autoboot","1");
                     settings=replaceKey(settings,"model","5");
                     settings=replaceKey(settings,"native","0");
-                    settings=replaceKey(settings,"s3528","0");
+                    // P032: exercise the real nominal reconstruction filter
+                    // after the original firmware has written its S3528 codes.
+                    settings=replaceKey(settings,"s3528","1");
                     settings=replaceKey(settings,"memory1mb","0");
                     configured=eii::portable::encodeProject(settings,original.bank,original.hdd);
                 }else{
@@ -123,6 +125,8 @@ BLOCK=r'''
                                "reopened original project state lost SSM2045 model=5");
                     requireP030(original.settings.find("\nrom=")!=std::string::npos,
                                "reopened original project state lost the ROM reference");
+                    requireP030(original.settings.find("\ns3528=1\n")!=std::string::npos,
+                               "reopened original project state unexpectedly disabled S3528");
                     configured=restored; // strict, byte-for-byte host project recall
                 }
                 requireP030(in.setState(configured),
@@ -145,8 +149,8 @@ BLOCK=r'''
                 requireP030(in.status("appliedmodel")=="5",
                            "original EII SSM2045 Model 2 (96k) was NOT applied");
                 requireP030(in.status("appliednative")=="0"&&
-                           in.status("applieds3528")=="0",
-                           "extra analog DAC/S3528 settings were unexpectedly forced");
+                           in.status("applieds3528")=="1",
+                           "original EII S3528 reconstruction was not enabled in the actual audio engine");
                 const auto beforeRead=in.status("midiread");
                 requireP030(!beforeRead.empty(),
                            "MIDI UART diagnostic unavailable on real Windows host");
@@ -199,9 +203,12 @@ BLOCK=r'''
                                "saved host state lacks selected original SSM filter");
                     requireP030(decoded.settings.find("\nrom=")!=std::string::npos,
                                "saved host state lost original firmware reference");
+                    requireP030(decoded.settings.find("\ns3528=1\n")!=std::string::npos,
+                               "saved host state lost original EII reconstruction route");
                 }
                 std::cout<<"P030 "<<pass<<" original Pxx="<<in.status("lcd0")
                          <<" model="<<in.status("appliedmodel")
+                         <<" s3528="<<in.status("applieds3528")
                          <<" frames="<<330ull*512
                          <<" nonzero="<<result.active
                          <<" peak="<<result.peak
