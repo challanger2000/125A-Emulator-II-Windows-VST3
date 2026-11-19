@@ -1,6 +1,8 @@
 # P040 — original OS3.1 Windows VST3 multi-rate and causal-negative acceptance
 
-**DEV until an owner-private original-ROM Windows run reports every P040 case and CHECK as PASS.** Public GitHub Actions **compiles** the actual Windows VST3+host harness, runs an invalid-media negative gate, and validates source contracts. It never provides evidence of genuine-ROM private recording.
+**OWNER-PRIVATE WINDOWS P040 MATRIX: PASS on 2026-11-19 via P041 test kit.** All six logged P040 CHECK gates passed, with `failed_gates=0`; original media remained unchanged. The exact summarized evidence and its boundaries are in [`QA/P041-PRIVATE-WINDOWS-ORIGINAL-MATRIX-RESULT.md`](P041-PRIVATE-WINDOWS-ORIGINAL-MATRIX-RESULT.md). Public GitHub Actions **compiles** the actual Windows VST3+host harness, runs an invalid-media negative gate, and validates source contracts. It never provides evidence of genuine-ROM private recording.
+
+Owner-log limitation: the uploaded P041 result records final gate outcomes and hashes, **not** each individual case's raw metrics or captured PCM. P041 is not the same as the broader P037 FULL ACCEPTANCE, hardware filter calibration, or final Studio One sign-off.
 
 ## Owner-local one-click test
 
