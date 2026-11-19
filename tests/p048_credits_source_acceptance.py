@@ -19,7 +19,7 @@ workflow = (ROOT / ".github/workflows/wav-bridge-qa.yml").read_text(encoding="ut
 checks = {
     "source patch only adds About/credits command": (
         patched.count('L"About / credits..."') == 1
-        and patched.count('case 61:ask(') == 1
+        and patched.count('case 9610:ask(') == 1
         and src.replace(module.OLD_MENU, "").replace(module.OLD_CASE, "")
         == patched.replace(module.NEW_MENU, "").replace(module.NEW_CASE, "")
     ),
@@ -53,7 +53,7 @@ for broken in [
     patched,
     src.replace(module.OLD_MENU, "", 1),
     src.replace(module.OLD_CASE, "", 1),
-    src.replace(module.OLD_CASE, module.OLD_CASE + "\n        case 61:break;", 1),
+    src.replace(module.OLD_CASE, module.OLD_CASE + "\n        case 9610:break;", 1),
 ]:
     try:
         module.patch(broken)
