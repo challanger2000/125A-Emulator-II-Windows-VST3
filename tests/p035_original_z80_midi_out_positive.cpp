@@ -155,8 +155,6 @@ int main()try{
     for(std::size_t i=1;i<single.bytes.size();++i){
         check(single.bytes[i].tick>=single.bytes[i-1].tick+1280,
               "no SCN2651 outgoing character is transmitted faster than MIDI wire rate");
-        check(single.bytes[i].byte<128||single.bytes[i].byte>=128,
-              "all eight original UART bits delivered intact");
     }
     message(single,0,0x90,60,100,3);
     message(single,1,0x90,62,80,3);
