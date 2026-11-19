@@ -12,7 +12,7 @@ if not exist "%~dp0Test-Private-Original-EII-P040-Windows.ps1" (
   exit /b 1
 )
 rem Pass paths through environment variables instead of CMD quote parsing.
-rem Stream original PowerShell/host output to BOTH console and result file.
+rem Start-Transcript in the PowerShell script mirrors actual console output to the log.
 set "P040_PS1=%~dp0Test-Private-Original-EII-P040-Windows.ps1"
 set "P040_ROM=%~dp0Original-ROM"
 set "P040_OS=%~dp0Original-Medien\Emulator-II-OS31.emuiifd"
@@ -22,7 +22,8 @@ echo P040: Original-Firmware-Test startet. Fortschritt erscheint hier live.
 echo P040: Ergebnisse stehen parallel in "%RESULT%"
 echo P040: Mehrere frische Emulator-Starts sind normal. Kein stummes schwarzes Fenster.
 echo.
-powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "& { & $env:P040_PS1 -RomDir $env:P040_ROM -Os31Floppy $env:P040_OS -ChoirFloppy $env:P040_CHOIR *>&1 | Tee-Object -FilePath $env:RESULT -Append; if (-not $?) { exit 1 }; if ($null -eq $LASTEXITCODE) { exit 1 }; exit $LASTEXITCODE }"
+set "P040_LOG=%RESULT%"
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%P040_PS1%" -RomDir "%P040_ROM%" -Os31Floppy "%P040_OS%" -ChoirFloppy "%P040_CHOIR%"
 set "CODE=%ERRORLEVEL%"
 >> "%RESULT%" echo P040 BAT exit_code=%CODE%
 echo.
