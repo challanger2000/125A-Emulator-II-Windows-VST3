@@ -413,6 +413,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host preflight failed" }
           python tools/apply-p029-default-host-test.py
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host patch failed" }
+          python tests/p039_windows_c3_pitch_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P039 actual Windows recording MIDI C3 root pitch regression" }
           python tests/p029_host_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host source assertions failed" }
           python tools/apply-p030-original-windows-test.py --verify
