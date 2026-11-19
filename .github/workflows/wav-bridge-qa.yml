@@ -588,6 +588,8 @@ jobs:
           Copy-Item 'tools/Test-Private-Original-EII-P038-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P038-Windows.ps1'
           Copy-Item 'tools/Test-Private-Original-EII-P040-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P040-Windows.ps1'
           Copy-Item 'tools/START-P040-TEST.bat' 'artifact-p030-owner-qa/START-P040-TEST.bat'
+          Copy-Item 'tools/START-P041-TEST.bat' 'artifact-p030-owner-qa/START-P041-TEST.bat'
+          Copy-Item 'tools/P041-AutoLauncher.ps1' 'artifact-p030-owner-qa/P041-AutoLauncher.ps1'
           Copy-Item 'QA/START-HERE-P040.md' 'artifact-p030-owner-qa/README-P040.md'
           Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'

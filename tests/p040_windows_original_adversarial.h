@@ -66,7 +66,15 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
         "invalid original ROM/OS/Choir host project state");
     req(in.start(double(tc.rate),kOffline,block),"cannot activate original Windows VST3");
     auto begun=Clock::now();bool ready=false;
+    auto nextBootNotice=begun+std::chrono::seconds(10);
+    std::cout<<"P041 "<<tc.name<<" firmware_boot=START (original OS 3.1)"<<"\n"<<std::flush;
     while(Clock::now()-begun<std::chrono::seconds(240)){
+        if(Clock::now()>=nextBootNotice){
+            const auto secs=std::chrono::duration_cast<std::chrono::seconds>(Clock::now()-begun).count();
+            std::cout<<"P041 "<<tc.name<<" firmware_boot=RUNNING seconds="<<secs
+                     <<" lcd0="<<in.status("lcd0")<<"\n"<<std::flush;
+            nextBootNotice=Clock::now()+std::chrono::seconds(10);
+        }
         const auto error=in.status("error");
         req(error.empty(),"original-ROM boot exception: "+error);
         if(in.ready()&&in.status("loaded")=="1"){ready=true;break;}
@@ -155,12 +163,19 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
     req(in.diag->qaSaveCurrentBank()==0,"original firmware DISK7 SAVE command refused");
     bool saved=false;
     std::string lastSaveStage;
+    auto nextSaveNotice=Clock::now()+std::chrono::seconds(10);
     for(int b=0;b<40000;++b){
         std::fill(in.inputLeft.begin(),in.inputLeft.end(),0.f);
         std::fill(in.inputRight.begin(),in.inputRight.end(),0.f);
         in.data.inputs[0].silenceFlags=3;
         req(in.process(),"host failed while original firmware wrote DISK7");
         if(b%16)continue;
+        if(Clock::now()>=nextSaveNotice){
+            std::cout<<"P041 "<<tc.name<<" bank_save=RUNNING"
+                     <<" lcd0="<<in.status("lcd0")
+                     <<" lcd1="<<in.status("lcd1")<<"\n"<<std::flush;
+            nextSaveNotice=Clock::now()+std::chrono::seconds(10);
+        }
         const auto bankStage=in.status("wavstatus");
         if(bankStage!=lastSaveStage){
             lastSaveStage=bankStage;
