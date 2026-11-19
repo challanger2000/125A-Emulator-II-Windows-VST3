@@ -71,6 +71,7 @@ int main()try{
     require(!flood.popTx(frame)&&flood.txPending()==0,"bounded TX drain finishes");
 
     // Old firmware RX path must stay independent of TX.
+    tx.readCommand();tx.writeMode(0x4e);tx.writeMode(0);tx.writeCommand(0x27);
     const std::array<std::uint8_t,3> note{0x90,48,100};
     eii::MidiWire wire;
     require(wire.enqueue(note,6000),"prior original host MIDI receive queue intact");
