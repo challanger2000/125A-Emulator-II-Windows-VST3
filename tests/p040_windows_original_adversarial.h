@@ -154,15 +154,28 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
     }
     req(in.diag->qaSaveCurrentBank()==0,"original firmware DISK7 SAVE command refused");
     bool saved=false;
+    std::string lastSaveStage;
     for(int b=0;b<40000;++b){
         std::fill(in.inputLeft.begin(),in.inputLeft.end(),0.f);
         std::fill(in.inputRight.begin(),in.inputRight.end(),0.f);
         in.data.inputs[0].silenceFlags=3;
         req(in.process(),"host failed while original firmware wrote DISK7");
         if(b%16)continue;
+        const auto bankStage=in.status("wavstatus");
+        if(bankStage!=lastSaveStage){
+            lastSaveStage=bankStage;
+            std::cout<<"P040 "<<tc.name<<" bank_stage="<<bankStage
+                     <<" lcd0="<<in.status("lcd0")
+                     <<" lcd1="<<in.status("lcd1")
+                     <<" report="<<in.status("wavreport")
+                     <<"\n"<<std::flush;
+        }
         if(p038Count(in,"wavreport")>=startReport+2 &&
            in.status("wavsuccess")=="1"){saved=true;break;}
-        req(in.status("error").empty(),"firmware bank save failed: "+in.status("error"));
+        req(in.status("error").empty(),
+            "firmware bank save failed: "+in.status("error")+
+            " lcd0="+in.status("lcd0")+" lcd1="+in.status("lcd1")+
+            " bank_stage="+bankStage);
     }
     req(saved,"original DISK7 bank was not committed");
     const auto project=in.getState();

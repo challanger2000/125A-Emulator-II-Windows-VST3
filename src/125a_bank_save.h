@@ -13,6 +13,9 @@ struct SaveStep{SaveAction action=SaveAction::None;const char* error=nullptr;boo
 class FirmwareBankSave {
 public:
     static constexpr std::uint64_t rate=4000000,hold=rate/10,maxSave=120*rate;
+    // Original scanner contacts may occasionally miss a DISK exit pulse.
+    // Retry only while the firmware LCD still explicitly shows the DISK menu.
+    static constexpr unsigned maxExitRetries=2;
     SaveStep begin(std::uint64_t tick,std::uint64_t writes)noexcept{
         reset();startWrites_=writes;phase_=SavePhase::EnterHeld;deadline_=tick+hold;
         return {SaveAction::DiskDown};
@@ -59,7 +62,17 @@ public:
             if(lcd0.size()>=3&&lcd0[0]=='P'&&lcd0[1]>='0'&&lcd0[1]<='9'&&lcd0[2]>='0'&&lcd0[2]<='9'){
                 phase_=SavePhase::Complete;return {SaveAction::None,nullptr,true,true};
             }
-            if(tick>=deadline_)return fail("Saved bank not returned to Pxx performance screen");
+            if(tick>=deadline_){
+                // Do not declare a bank saved while still inside DISK.
+                // Re-send a bounded physical DISK contact if the original
+                // menu is clearly still displayed; all other states fail.
+                if(lcd0.find("Disk [1-8]")!=lcd0.npos&&exitRetries_<maxExitRetries){
+                    ++exitRetries_;
+                    phase_=SavePhase::ExitHeld;deadline_=tick+hold;
+                    return {SaveAction::ExitDown};
+                }
+                return fail("Saved bank not returned to Pxx performance screen");
+            }
             break;
         default:break;
         }
@@ -79,10 +92,11 @@ public:
         default:return "Idle";
         }
     }
-    void reset()noexcept{phase_=SavePhase::Idle;startWrites_=deadline_=0;}
+    void reset()noexcept{phase_=SavePhase::Idle;startWrites_=deadline_=0;exitRetries_=0;}
 private:
     SavePhase phase_=SavePhase::Idle;
     std::uint64_t startWrites_=0,deadline_=0;
+    unsigned exitRetries_=0;
     SaveStep fail(const char* why)noexcept{
         phase_=SavePhase::Failed;return {SaveAction::None,why,true,false};
     }
