@@ -66,6 +66,9 @@ jobs:
           python3 tools/apply-p033-original-midi-transmitter.py --verify
           python3 tools/apply-p033-original-midi-transmitter.py
           python3 tests/p033_source_acceptance.py
+          python3 tools/apply-p034-original-midi-out-vst3.py --verify
+          python3 tools/apply-p034-original-midi-out-vst3.py
+          python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
@@ -85,6 +88,12 @@ jobs:
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
+      - name: P034 original MIDI channel-voice TX assembler and system message negative tests
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/p034_original_midi_out_tests.cpp -o /tmp/p034_midiout
+          /tmp/p034_midiout
+          g++ -std=c++23 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -Werror -pedantic -I src tests/p034_original_midi_out_tests.cpp -o /tmp/p034_midiout_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/p034_midiout_san
       - name: P033 original SCN2651 MIDI TX clock/register/overflow regression
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I upstream/eii-emu/src tests/p033_midi_tx_tests.cpp -o /tmp/p033_midi_tx
@@ -306,6 +315,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P033 original MIDI TX hardware source integration failed" }
           python tests/p033_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P033 real Z80 OUT4 -> 2651 TX source contract failed" }
+          python tools/apply-p034-original-midi-out-vst3.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P034 original MIDI output host bridge source pin/anchors failed" }
+          python tools/apply-p034-original-midi-out-vst3.py
+          if ($LASTEXITCODE -ne 0) { throw "P034 original MIDI OUT hardware VST3 host bridge failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
@@ -374,6 +387,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P032 real Windows S3528 host acceptance integration failed" }
           python tests/p032_s3528_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P032 original EII S3528 source and negative controls failed" }
+          python tools/apply-p034-midi-out-host-test.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P034 original real Windows MIDI event output COM probe preflight failed" }
+          python tools/apply-p034-midi-out-host-test.py
+          if ($LASTEXITCODE -ne 0) { throw "P034 original real Windows MIDI event output COM probe installation failed" }
+          python tests/p034_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P034 original UART MIDI output and VST3 event source contract failed" }
           python tests/p026_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
@@ -389,6 +408,14 @@ jobs:
           if (-not $compiler) { throw "Pinned LLVM-MinGW compiler not found" }
           $toolchain = Split-Path (Split-Path $compiler.FullName -Parent) -Parent
           "LLVM_MINGW_ROOT=$toolchain" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: P034 test MIDI channel parser with real Windows UCRT compiler
+        shell: pwsh
+        run: |
+          $cc=Join-Path $env:LLVM_MINGW_ROOT "bin/x86_64-w64-mingw32-clang++.exe"
+          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-static' '-Isrc' 'tests/p034_original_midi_out_tests.cpp' '-o' 'p034_midiout_windows.exe'
+          if ($LASTEXITCODE -ne 0) { throw "P034 original MIDI channel parser compile failed" }
+          & './p034_midiout_windows.exe'
+          if ($LASTEXITCODE -ne 0) { throw "P034 Windows original MIDI channel parser regression failed" }
       - name: P033 test original 2651 MIDI TX with real Windows UCRT compiler
         shell: pwsh
         run: |
@@ -439,6 +466,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-binary-recall"
           if ($LASTEXITCODE -ne 0) { throw "P031 actual COM binary media project recall regression failed" }
+      - name: Verify P034 real Windows VST3 original MIDI OUT event bus and no fake notes
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-midi-out-bus"
+          if ($LASTEXITCODE -ne 0) { throw "P034 original Windows MIDI event output real COM/no-fake-output test failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
@@ -451,11 +485,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P032.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P034.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P032-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P034-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
@@ -468,12 +502,14 @@ jobs:
           Copy-Item 'tools/Test-Private-Original-EII.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII.ps1'
           Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
+          Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
+          Copy-Item 'QA/START-HERE-P034.md' 'artifact-p030-owner-qa/README-P034.md'
           Copy-Item 'LICENSE' 'artifact-p030-owner-qa/GPL-3.0-LICENSE.txt'
           $bad=Get-ChildItem 'artifact-p030-owner-qa' -Recurse -File | Where-Object { $_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img') }
           if($bad){throw 'P030 private ROM/OS/sample files are forbidden in CI artifact'}
       - uses: actions/upload-artifact@v4
         with:
-          name: P032-Windows-S3528-Original-ROM-LOCAL-QA-TOOLS-NO-MEDIA
+          name: P034-Windows-Original-MIDI-OUT-LOCAL-QA-TOOLS-NO-MEDIA
           path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
