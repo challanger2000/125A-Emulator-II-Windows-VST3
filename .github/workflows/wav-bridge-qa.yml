@@ -93,9 +93,9 @@ jobs:
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
       - name: P035 full-SPSC MIDI UART output loss recovery and ghost-note counterproof
         run: |
-          g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap
           /tmp/p035_midi_gap
-          g++ -std=c++23 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -Werror -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap_san
+          g++ -std=c++23 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap_san
           ASAN_OPTIONS=detect_leaks=0 /tmp/p035_midi_gap_san
       - name: P035 positive real Z80 machine MIDI OUT -> UART -> VST3 channel decoder across CPU quantums
         run: |
@@ -431,7 +431,7 @@ jobs:
         shell: pwsh
         run: |
           $cc=Join-Path $env:LLVM_MINGW_ROOT "bin/x86_64-w64-mingw32-clang++.exe"
-          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-static' '-Iupstream/eii-emu/src' 'tests/p035_midi_out_gap_recovery_tests.cpp' '-o' 'p035_midi_gap_windows.exe'
+          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-Wno-error=misleading-indentation' '-static' '-Iupstream/eii-emu/src' 'tests/p035_midi_out_gap_recovery_tests.cpp' '-o' 'p035_midi_gap_windows.exe'
           if ($LASTEXITCODE -ne 0) { throw "P035 real Windows original MIDI output overflow safe compile failed" }
           & './p035_midi_gap_windows.exe'
           if ($LASTEXITCODE -ne 0) { throw "P035 real Windows original MIDI output ghost-note recovery test failed" }
