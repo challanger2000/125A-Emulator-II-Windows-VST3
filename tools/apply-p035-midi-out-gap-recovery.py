@@ -44,8 +44,8 @@ def patch_engine(s):
     bool originalMidiOutGapPending_=false;""",
         "original owner MIDI OUT loss state")
     s=one(s,
-        "            midiTools_.resetInputState();midiTools_.wheelBridge=c.midiWheels;midiTools_.noteOffZero=c.noteOffZero;",
-        """            midiTools_.resetInputState();midiTools_.wheelBridge=c.midiWheels;midiTools_.noteOffZero=c.noteOffZero;
+        "            midiTools_.wheelBridge=c.midiWheels;midiTools_.noteOffZero=c.noteOffZero;",
+        """            midiTools_.wheelBridge=c.midiWheels;midiTools_.noteOffZero=c.noteOffZero;
             originalMidiOutGapPending_=false;""",
         "reboot no cross-song pending MIDI gap")
     s=one(s,
