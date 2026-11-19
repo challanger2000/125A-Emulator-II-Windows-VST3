@@ -41,7 +41,7 @@ The fast/native phase differs as expected for an integrator, including about −
 - **P043-A original source pin and compilation: PASS**
 - **P043-B differential-coded amplitude/phase A/B: PASS**
 - **P043-C S3528 code35 stopband behavior both paths: PASS**
-- **P043-D native=1 original firmware Windows VST3 capture and project recall: NOT RUN**
+- **P043-D native=1 original firmware Windows VST3 original SAR capture, DISK7 save, bank snapshot and audition: PASS in owner P044, 2026-11-19**; complete project reopen in actual DAW remains NOT RUN. See [P044 owner evidence](P044-PRIVATE-ORIGINAL-FIRMWARE-WINDOWS-PASS.md).
 - **P043-E original EII hardware, matched stimulus, FCV/QCV, VCA, clock images and THD: NOT VERIFIED**
 
 **Disposition:** Retain stable reference default in this checkpoint; prioritize measured Windows original-firmware native route before making a source-level default change. The pronounced multi-frequency mismatch is a verified **behavioral difference**, not proof of silicon error in the native model.
