@@ -549,7 +549,7 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-sar-qa-negative"
           if ($LASTEXITCODE -ne 0) { throw "P038 Windows VST3 COM private scanner invalid-input negative check failed" }
-      - name: P040 real Windows VST3 COM negative: must reject missing proprietary original firmware
+      - name: "P040 real Windows VST3 COM negative: must reject missing proprietary original firmware"
         shell: pwsh
         run: |
           $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
