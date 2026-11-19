@@ -10,8 +10,16 @@ spec = importlib.util.spec_from_file_location(
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-src = module.SOURCE.read_text(encoding="utf-8")
+# CI has applied the P048 overlay before source tests. Reconstruct its
+# input exactly, then check that replay produces the installed source.
+installed = module.SOURCE.read_text(encoding="utf-8")
+assert installed.count(module.NEW_MENU) == 1, "P048 menu not installed once"
+assert installed.count(module.NEW_CASE) == 1, "P048 case not installed once"
+src = installed.replace(module.NEW_MENU, module.OLD_MENU).replace(
+    module.NEW_CASE, module.OLD_CASE
+)
 patched = module.patch(src)
+assert patched == installed, "P048 source replay differs from installed source"
 pack = (ROOT / "tools/Package-Private-Emulator-II.ps1").read_text(encoding="utf-8")
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 credits = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
