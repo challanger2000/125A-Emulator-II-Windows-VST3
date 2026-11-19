@@ -29,3 +29,9 @@ The existence of a working schematic-derived recording path does not establish a
 - MIDI OUT full system/SysEx handling and original DIN electrical/timing tests; original scanner LED behavior against physical panel measurements.
 
 No proprietary original firmware, sample or media assets are bundled. User Studio One end acceptance remains deliberately reserved for the end.
+
+## Product diagnostic correction
+
+The pinned `Machine::report()` still printed `channel0 MODE/SAR and analog conversion absent` and listed `sample-recording/SAR DRAM writes` as `UNIMPLEMENTED` even though the matching functions exist and are exercised by real Z80 tests. It also described SCN2651 MIDI TX as having no timing after P033 added its baud-timed character completion.
+
+P036 now **changes that actual runtime report**: it exposes IMODE, original sample reads, unknown read count, original SAR conversion/EOC, comparator uncertainty, IWAIT clocks, input analog chain steps and amplifier rail clips. The former absolute absence claim is removed. The report explicitly continues to mark original analog silicon, sample gain/offset, DAC/filter and physical board calibration as **UNCALIBRATED**, and does not pretend original-ROM Windows recording has been tested. A source negative check prevents the three stale claims from silently returning. The actual synthetic Windows/Linux recording test executes `Machine::report()` and validates the new counters and wording.
