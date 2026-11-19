@@ -22,6 +22,8 @@ def one(src,old,new,label):
     return src.replace(old,new,1)
 
 def patch_engine(s):
+    if "originalMidiOut_" in s:
+        raise RuntimeError("P034 original MIDI owner SPSC already installed")
     for required in ("bootGate_","autonomousBoot_","anchorHostPosLocal_","streamGeneration_",
                      "midiSerial.txBusy()"):
         if required not in s and required!="midiSerial.txBusy()":
@@ -108,6 +110,8 @@ def patch_engine(s):
     return s
 
 def patch_product(s):
+    if "engine_->drainOriginalMidiOut(" in s:
+        raise RuntimeError("P034 VST3 MIDI output already installed")
     s=one(s,
         'if(type==kAudio&&dir==kOutput)return 1+auxOutputs;if(type==kAudio&&dir==kInput)return 1;if(type==kEvent&&dir==kInput)return 1;return 0;',
         'if(type==kAudio&&dir==kOutput)return 1+auxOutputs;if(type==kAudio&&dir==kInput)return 1;if(type==kEvent&&(dir==kInput||dir==kOutput))return 1;return 0;',
