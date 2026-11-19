@@ -32,11 +32,15 @@ This is a **fidelity coverage gap**, not proof of a bug or an argument to turn o
 
 ## Evidence gates (never fabricate PASS)
 
-- `P042-A` **PASS:** source provenance and default-route inventory, **done**.
-- `P042-B` **PASS:** existing SSM2 vs SPICE and S3528B plotted-curve comparisons are present (their stated scope only).
+- `P042-A` **SOURCE-VERIFIED:** source provenance and default-route inventory, 9/9 literal source checks against the live 125A repository and pinned upstream files (2026-11-19); no C++ DSP runtime executed in this audit.
+- `P042-B` **DOCUMENTED / NOT RE-RUN:** existing upstream SSM2-versus-SPICE and S3528B plotted-curve comparison reports are present; this audit reads their stated values but has not reproduced their numerical runs. They do not constitute measured EII hardware acceptance.
 - `P042-C` **NOT VERIFIED:** original EII measured filter frequency/Q/THD response compared to matching input.
 - `P042-D` **NOT VERIFIED:** original EII S3528 clock phase/alias/settling versus current continuous-time fit.
 - `P042-E` **NOT VERIFIED:** authentic native DAC/deglitch output versus reference hardware, across rates and dynamics.
 - `P042-F` **NOT VERIFIED:** real Windows/Studio One host test **with native=1** and original firmware for the entire matrix.
+
+## 2026-11-19 additional provenance check
+
+The upstream GitHub `Tuth/eii-emu` public `main` contains the single initial published commit `e345bcf00af8a066ebace9168cf0b6c3a40ca164` as of this audit. There is no newer public upstream filter fix to import. The publicly available **1984 AMI S3528** catalogue describes the original six-bit switched-capacitor device, while the existing fitted profile references the later **1993 AMI S3528B** typical curves. The current upstream documentation itself explicitly does not assert that the two silicon revisions are identical.
 
 There is currently **no quantitative hardware-derived correction** that can responsibly be made to the shipped filter coefficients, so this audit intentionally makes **no DSP or default-setting changes**. Revisit the original-engine source/measurements rather than adding a second approximate filter implementation.
