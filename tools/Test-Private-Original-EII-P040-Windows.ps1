@@ -18,6 +18,12 @@ if ([string]::IsNullOrWhiteSpace($KitDir)) {
  throw 'P040 test folder could not be resolved from script path'
 }
 $KitDir=[System.IO.Path]::GetFullPath($KitDir)
+# Owner one-click BAT sets P040_LOG. PowerShell's transcript records the same
+# real-time host output that appears on screen, including Write-Host and stderr.
+# The standalone no-media smoke intentionally runs without a transcript.
+if (-not [string]::IsNullOrWhiteSpace($env:P040_LOG)) {
+    Start-Transcript -LiteralPath $env:P040_LOG -Append | Out-Null
+}
 Write-Host ('P040 SCRIPT_DIR '+$KitDir)
 $exe=Join-Path $KitDir 'vst3_host_test.exe'
 $bundle=Join-Path $KitDir 'EmulatorII-Custom.vst3'
@@ -69,6 +75,10 @@ try {
   }
  }
 }
-if($failed){exit 1}
+if($failed){
+    if ($env:P040_LOG) { Stop-Transcript | Out-Null }
+    exit 1
+}
 Write-Host 'P040 FINAL ORIGINAL-FIRMWARE WINDOWS VST3 TEST: PASS'
+if ($env:P040_LOG) { Stop-Transcript | Out-Null }
 exit 0
