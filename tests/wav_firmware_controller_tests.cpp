@@ -77,5 +77,32 @@ int main(){
     a=f.advance(3*s+FirmwareCapture::maxDuration+3*h,
                 "P01 NULL PRESET","",490000,true,3*s,false);
     req(a.completed&&a.success,"natural full-bank end returns to preset");
+    // P037: a single SAR read followed by a fabricated firmware-complete
+    // display is never evidence of a recorded waveform.
+    f.reset();f.begin(0,s);
+    f.advance(h,"P01","",0,false,0,false);
+    f.advance(2*s,"VOICE V01","",0,false,0,true);
+    f.advance(2*s+h,"VOICE V01","",0,false,0,true);
+    f.advance(3*s,"VOICE V01","",1,true,3*s,true);
+    a=f.advance(3*s+s,"Sample is good","",1,true,3*s,true);
+    req(a.completed&&!a.success&&f.phase()==CapturePhase::Failed,
+        "P037 firmware LCD good must not mask stalled original ADC");
+    // P037: even after a STOP acknowledgement the volume of ADC reads
+    // must match a nontrivial recording, rather than a stale RAM voice.
+    f.reset();f.begin(0,s);
+    f.advance(h,"P01","",0,false,0,false);
+    f.advance(2*s,"VOICE V01","",0,false,0,true);
+    f.advance(2*s+h,"VOICE V01","",0,false,0,true);
+    f.advance(3*s,"VOICE V01","",1,true,3*s,true);
+    a=f.advance(3*s+s+s/20,"VOICE V01","",1,true,3*s,true);
+    req(a.completed&&!a.success,"P037 no progress fails before STOP action");
+    // P037: source start cannot precede a future machine tick.
+    f.reset();f.begin(0,s);
+    f.advance(h,"P01","",0,false,0,false);
+    f.advance(2*s,"VOICE V01","",0,false,0,true);
+    f.advance(2*s+h,"VOICE V01","",0,false,0,true);
+    a=f.advance(3*s,"VOICE V01","",1,true,4*s,true);
+    req(a.action==CaptureAction::None && f.phase()==CapturePhase::AwaitFirstRead,
+        "P037 reject future source start timestamp");
     std::cout<<"125A original-firmware SAMPLE/FORCE/STOP/preset controller: PASS\n";
 }
