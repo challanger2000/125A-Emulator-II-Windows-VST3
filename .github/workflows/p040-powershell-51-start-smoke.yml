@@ -53,3 +53,6 @@ jobs:
             throw 'P040 one-click batch has the old broken PowerShell argument handling'
           }
           Write-Host 'P040 START-P040-TEST.bat REAL WINDOWS CMD LIVE-LOGGING SMOKE: PASS'
+          # CMD is expected to return failure for the deliberately absent VST3.
+          # Clear the resulting LASTEXITCODE after all fail-closed assertions pass.
+          $global:LASTEXITCODE=0
