@@ -26,8 +26,6 @@ powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Comma
 set "CODE=%ERRORLEVEL%"
 >> "%RESULT%" echo P040 BAT exit_code=%CODE%
 echo.
-type "%RESULT%"
-echo.
 if "%CODE%"=="0" (
   echo P040: PASS. Original Windows VST3 test abgeschlossen.
 ) else (
