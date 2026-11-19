@@ -11,7 +11,7 @@ if not exist "%~dp0Test-Private-Original-EII-P040-Windows.ps1" (
   pause
   exit /b 1
 )
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Test-Private-Original-EII-P040-Windows.ps1" -KitDir "%~dp0" -RomDir "%~dp0Original-ROM" -Os31Floppy "%~dp0Original-Medien\Emulator-II-OS31.emuiifd" -ChoirFloppy "%~dp0Original-Medien\EII-Choir.emuiifd" >> "%RESULT%" 2>&1
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0Test-Private-Original-EII-P040-Windows.ps1" -RomDir "%~dp0Original-ROM" -Os31Floppy "%~dp0Original-Medien\Emulator-II-OS31.emuiifd" -ChoirFloppy "%~dp0Original-Medien\EII-Choir.emuiifd" >> "%RESULT%" 2>&1
 set "CODE=%ERRORLEVEL%"
 >> "%RESULT%" echo P040 BAT exit_code=%CODE%
 echo.
