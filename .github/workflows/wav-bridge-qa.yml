@@ -68,6 +68,9 @@ jobs:
           python3 tests/p033_source_acceptance.py
           python3 tools/apply-p034-original-midi-out-vst3.py --verify
           python3 tools/apply-p034-original-midi-out-vst3.py
+          python3 tools/apply-p035-midi-out-gap-recovery.py --verify
+          python3 tools/apply-p035-midi-out-gap-recovery.py
+          python3 tests/p035_gap_source_acceptance.py
           python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
@@ -88,6 +91,16 @@ jobs:
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
+      - name: P035 full-SPSC MIDI UART output loss recovery and ghost-note counterproof
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap
+          /tmp/p035_midi_gap
+          g++ -std=c++23 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap_san
+          ASAN_OPTIONS=detect_leaks=0 /tmp/p035_midi_gap_san
+      - name: P035 positive real Z80 machine MIDI OUT -> UART -> VST3 channel decoder across CPU quantums
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp tests/p035_original_z80_midi_out_positive.cpp -o /tmp/p035_original_z80_midiout
+          /tmp/p035_original_z80_midiout
       - name: P034 original MIDI channel-voice TX assembler and system message negative tests
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -pedantic -I src tests/p034_original_midi_out_tests.cpp -o /tmp/p034_midiout
@@ -319,6 +332,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P034 original MIDI output host bridge source pin/anchors failed" }
           python tools/apply-p034-original-midi-out-vst3.py
           if ($LASTEXITCODE -ne 0) { throw "P034 original MIDI OUT hardware VST3 host bridge failed" }
+          python tools/apply-p035-midi-out-gap-recovery.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P035 original MIDI output SPSC loss barrier preflight failed" }
+          python tools/apply-p035-midi-out-gap-recovery.py
+          if ($LASTEXITCODE -ne 0) { throw "P035 loss gap original MIDI OUT real-time safety patch failed" }
+          python tests/p035_gap_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P035 fail-closed ghost MIDI NoteOn loss recovery source test failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
@@ -408,6 +427,14 @@ jobs:
           if (-not $compiler) { throw "Pinned LLVM-MinGW compiler not found" }
           $toolchain = Split-Path (Split-Path $compiler.FullName -Parent) -Parent
           "LLVM_MINGW_ROOT=$toolchain" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: P035 test original MIDI OUT overflow ghost-note prevention on real Windows UCRT
+        shell: pwsh
+        run: |
+          $cc=Join-Path $env:LLVM_MINGW_ROOT "bin/x86_64-w64-mingw32-clang++.exe"
+          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-Wno-error=misleading-indentation' '-static' '-Iupstream/eii-emu/src' 'tests/p035_midi_out_gap_recovery_tests.cpp' '-o' 'p035_midi_gap_windows.exe'
+          if ($LASTEXITCODE -ne 0) { throw "P035 real Windows original MIDI output overflow safe compile failed" }
+          & './p035_midi_gap_windows.exe'
+          if ($LASTEXITCODE -ne 0) { throw "P035 real Windows original MIDI output ghost-note recovery test failed" }
       - name: P034 test MIDI channel parser with real Windows UCRT compiler
         shell: pwsh
         run: |
@@ -485,11 +512,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P034.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P035.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P034-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P035-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
@@ -504,12 +531,13 @@ jobs:
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
           Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
           Copy-Item 'QA/START-HERE-P034.md' 'artifact-p030-owner-qa/README-P034.md'
+          Copy-Item 'QA/START-HERE-P035.md' 'artifact-p030-owner-qa/README-P035.md'
           Copy-Item 'LICENSE' 'artifact-p030-owner-qa/GPL-3.0-LICENSE.txt'
           $bad=Get-ChildItem 'artifact-p030-owner-qa' -Recurse -File | Where-Object { $_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img') }
           if($bad){throw 'P030 private ROM/OS/sample files are forbidden in CI artifact'}
       - uses: actions/upload-artifact@v4
         with:
-          name: P034-Windows-Original-MIDI-OUT-LOCAL-QA-TOOLS-NO-MEDIA
+          name: P035-Windows-Original-MIDI-POSITIVE-LOCAL-QA-TOOLS-NO-MEDIA
           path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
