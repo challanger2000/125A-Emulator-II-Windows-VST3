@@ -37,6 +37,18 @@ static double p038Freq(const std::vector<float>& pcm) {
     p038Need(maxEnergy>0,"frequency analyzer received digital silence");
     return best;
 }
+static int p038WindowsQaNegative(const VST3::Hosting::PluginFactory& factory,
+    const VST3::UID& cid,FUnknown* host) {
+    Instance in;
+    p038Need(in.create(factory,cid,host),"cannot instantiate private VST3 QA COM");
+    p038Need(in.diag->qaScannerButton(-1,1)!=0,"negative scanner index accepted");
+    p038Need(in.diag->qaScannerButton(30,1)!=0,"out-of-range scanner accepted");
+    p038Need(in.diag->qaScannerButton(0,2)!=0,"non-Boolean scanner state accepted");
+    in.shutdown();
+    p038Need(eiiThreads()==0,"negative QA test leaked EII worker threads");
+    std::cout<<"P038 WINDOWS VST3 COM ORIGINAL SCANNER NEGATIVE: PASS\n";
+    return 0;
+}
 static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& factory,
     const VST3::UID& cid,FUnknown* host,const std::string& rom,
     const std::string& os31) {
