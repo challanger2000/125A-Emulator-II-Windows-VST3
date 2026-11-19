@@ -31,46 +31,26 @@ int main(){
     bund::adopt(fresh,res);
     need(fresh.romFolder==rom&&fresh.floppy==os&&fresh.osImage==os,"same OS/ROM layout as EIII");
     need(!fresh.directImageWrites,"owner system file never direct-written");
-    // P046: factory Choir is a second disk with a different role from OS31.
-    // The installable VST3 bundle contains BOTH, without an external media
-    // directory. Only the exact factory named disk is auto-mounted.
-    const auto choir=res/"Factory"/"EII-Choir.emuiifd";
-    make(choir,573440);
-    eii::vst::PluginSettings factory;
-    bund::adopt(factory,res);
-    need(factory.romFolder==rom&&factory.osImage==os&&factory.floppy==choir,
-         "P046 fresh VST3 automatically selects internal ROM + OS31 + Choir");
-    need(!factory.directImageWrites,"P046 packaged factory disk is protected read only");
-    const auto savedFactory=factory;
-    bund::adopt(factory,res);
-    need(factory==savedFactory,"P046 stable internal boot layout after repeated startup");
-    eii::vst::PluginSettings explicitOs;
-    explicitOs.romFolder=rom;explicitOs.osImage=os;explicitOs.floppy=os;
-    bund::adopt(explicitOs,res);
-    need(explicitOs.floppy==os,"P046 user explicitly selected OS floppy preserved");
-    eii::vst::PluginSettings movedFactory;
-    movedFactory.romFolder="C:/absent/old-rom";
-    movedFactory.osImage="C:/absent/old-os";
-    movedFactory.floppy="C:/absent/old-factory";
-    bund::adopt(movedFactory,res);
-    need(movedFactory.romFolder==rom&&movedFactory.osImage==os&&
-         movedFactory.floppy==choir,
-         "P046 stale external OS/ROM/factory paths repaired to internal media");
-    const auto externalFactory=root/"other"/"user-sound.emuiifd";
-    make(externalFactory,573440);
-    eii::vst::PluginSettings userDisk;
-    userDisk.floppy=externalFactory;
-    bund::adopt(userDisk,res);
-    need(userDisk.floppy==externalFactory,"P046 explicitly mounted external user bank stays mounted");
-    fs::remove(choir);
-    eii::vst::PluginSettings absentChoir;
-    bund::adopt(absentChoir,res);
-    need(absentChoir.floppy==os,"P046 absent factory disk fails back to one original OS");
-    make(choir,42);
-    eii::vst::PluginSettings corruptChoir;
-    bund::adopt(corruptChoir,res);
-    need(corruptChoir.floppy==os,"P046 invalid-size factory disk never selected");
-    fs::remove(choir);
+    // P046 distribution policy: the owner-private .vst3 bundle contains
+    // exact ROM+OS only; NO sample bank is to be auto-loaded.
+    const auto factory=res/"Factory"/"EII-Choir.emuiifd";
+    make(factory,573440);
+    eii::vst::PluginSettings clean;
+    bund::adopt(clean,res);
+    need(clean.romFolder==rom && clean.osImage==os && clean.floppy==os,
+         "P046 clean installation boots its own OS, not a bundled sound bank");
+    need(!clean.directImageWrites,"P046 original internal OS media is read-only");
+    // Even an incidental factory disk must not silently change startup.
+    eii::vst::PluginSettings preserved=clean;
+    bund::adopt(preserved,res);
+    need(preserved==clean,"P046 bundled firmware startup remains stable");
+    // No factory sample bank is a required dependency.
+    fs::remove(factory);
+    eii::vst::PluginSettings noSamples;
+    bund::adopt(noSamples,res);
+    need(noSamples.romFolder==rom&&noSamples.osImage==os&&noSamples.floppy==os,
+         "P046 native Emulator II starts without included sample banks");
+
     const auto original=fresh;
     bund::adopt(fresh,res);
     need(fresh==original,"idempotent resource autodetection");
