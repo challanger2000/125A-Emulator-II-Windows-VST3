@@ -3,6 +3,7 @@
 // SAMPLE -> real host input -> SAR/DRAM -> DISK7 -> PCM -> IBStream fresh instance.
 // No proprietary files can be compiled in or uploaded to GitHub Actions.
 #include "125a_firmware_capture.h"
+#include "scanner_controls.h"
 #include <array>
 #include <cmath>
 #include <sstream>
@@ -166,12 +167,13 @@ static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& fact
 
     auto play=[&](Instance& i)->std::pair<double,std::vector<float>> {
         EventList on,off;
-        on.addEvent(note(true,60,0));off.addEvent(note(false,60,0));
+        auto noteOn=note(true,60,0);auto noteOff=note(false,60,0);
+        on.addEvent(noteOn);off.addEvent(noteOff);
         std::vector<float> pcm;pcm.reserve(330*block);
         double peak=0;
         for(int b=0;b<330;++b){
-            i.inputLeft.assign(block,0.f);
-            i.inputRight.assign(block,0.f);
+            std::fill(i.inputLeft.begin(),i.inputLeft.end(),0.f);
+            std::fill(i.inputRight.begin(),i.inputRight.end(),0.f);
             i.data.inputs[0].silenceFlags=3;
             p038Need(i.process(b==0?&on:b==200?&off:nullptr),
                      "Windows VST3 recorded voice playback callback rejected");
