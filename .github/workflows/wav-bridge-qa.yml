@@ -67,6 +67,8 @@ jobs:
           python3 tools/apply-p045-native-dac-default.py
           python3 tools/apply-p047-eii-display-name.py --verify
           python3 tools/apply-p047-eii-display-name.py
+          python3 tools/apply-p048-eii-credits-menu.py --verify
+          python3 tools/apply-p048-eii-credits-menu.py
           python3 tools/apply-p033-original-midi-transmitter.py --verify
           python3 tools/apply-p033-original-midi-transmitter.py
           python3 tests/p033_source_acceptance.py
@@ -349,6 +351,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II factory class name preflight failed" }
           python tools/apply-p047-eii-display-name.py
           if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II VST3 actual factory class rename failed" }
+          python tools/apply-p048-eii-credits-menu.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P048 original developer About menu preflight failed" }
+          python tools/apply-p048-eii-credits-menu.py
+          if ($LASTEXITCODE -ne 0) { throw "P048 original developer About menu patch failed" }
           python tools/apply-p033-original-midi-transmitter.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P033 SCN2651 transmitter original Z80 source preflight failed" }
           python tools/apply-p033-original-midi-transmitter.py
@@ -449,6 +455,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P045 source and negative mutant acceptance failed" }
           python tests/p047_eii_name_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P047 factory name and VST3 package identity checks failed" }
+          python tests/p048_credits_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P048 attribution and package checks failed" }
           python tests/p032_s3528_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P032 original EII S3528 source and negative controls failed" }
           python tools/apply-p034-midi-out-host-test.py --verify
