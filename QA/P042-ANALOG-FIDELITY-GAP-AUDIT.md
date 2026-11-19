@@ -37,7 +37,7 @@ This is a **fidelity coverage gap**, not proof of a bug or an argument to turn o
 - `P042-C` **NOT VERIFIED:** original EII measured filter frequency/Q/THD response compared to matching input.
 - `P042-D` **NOT VERIFIED:** original EII S3528 clock phase/alias/settling versus current continuous-time fit.
 - `P042-E` **NOT VERIFIED:** authentic native DAC/deglitch output versus reference hardware, across rates and dynamics.
-- `P042-F` **NOT VERIFIED:** real Windows/Studio One host test **with native=1** and original firmware for the entire matrix.
+- `P042-F` **WINDOWS OWNER-ROM VERIFIED (P044, 2026-11-19)** for the original-firmware 5-case matrix with `native=1`, S3528=1 at 44.1/48 kHz, full SAMPLE/FORCE/STOP, DISK7 bank snapshot and MIDI audition; **Studio One NOT RUN**. See [P044 positive results](P044-PRIVATE-ORIGINAL-FIRMWARE-WINDOWS-PASS.md). Original analog silicon accuracy also remains unverified.
 
 ## 2026-11-19 additional provenance check
 
