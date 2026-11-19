@@ -71,6 +71,9 @@ jobs:
           python3 tools/apply-p035-midi-out-gap-recovery.py --verify
           python3 tools/apply-p035-midi-out-gap-recovery.py
           python3 tests/p035_gap_source_acceptance.py
+          python3 tools/apply-p036-sar-diagnostics.py --verify
+          python3 tools/apply-p036-sar-diagnostics.py
+          python3 tests/p036_sar_diagnostic_source_acceptance.py
           python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
@@ -342,6 +345,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P035 loss gap original MIDI OUT real-time safety patch failed" }
           python tests/p035_gap_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P035 fail-closed ghost MIDI NoteOn loss recovery source test failed" }
+          python tools/apply-p036-sar-diagnostics.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P036 real original SAR/analog diagnostic preflight failed" }
+          python tools/apply-p036-sar-diagnostics.py
+          if ($LASTEXITCODE -ne 0) { throw "P036 real original recording SAR diagnostic integration failed" }
+          python tests/p036_sar_diagnostic_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P036 original SAR unimplemented falsehood/physical calibration source regression failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
