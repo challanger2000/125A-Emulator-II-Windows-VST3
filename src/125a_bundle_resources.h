@@ -81,13 +81,13 @@ inline void adopt(PluginSettings& s,const fs::path& resources) {
     const auto os=uniqueOsDisk(resources/"OS");
     if(os.empty())return;
     if(!possibleOsDisk(s.osImage))s.osImage=os;
+    const auto choir=bundledFactoryChoir(resources);
     if(s.hdd.empty()&&!possibleOsDisk(s.floppy)) {
         // Genuine P044 mode: original OS 3.1 for boot, original Choir bank
         // mounted as the factory floppy. Both live INSIDE the .vst3 bundle.
-        const auto choir=bundledFactoryChoir(resources);
         s.floppy=choir.empty()?os:choir;
     }
-    if(s.floppy==os||s.floppy==bundledFactoryChoir(resources))
+    if(s.floppy==os||(!choir.empty()&&s.floppy==choir))
         s.directImageWrites=false;
 }
 inline void adopt(PluginSettings& s){adopt(s,moduleResources());}
