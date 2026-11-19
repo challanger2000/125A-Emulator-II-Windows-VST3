@@ -4,6 +4,7 @@
 param(
  [Parameter(Mandatory=$true)][string]$RomDir,
  [Parameter(Mandatory=$true)][string]$Os31Floppy,
+ [Parameter(Mandatory=$true)][string]$ChoirFloppy,
  [string]$KitDir=$PSScriptRoot
 )
 $ErrorActionPreference="Stop"
@@ -15,6 +16,7 @@ foreach($name in @('main.bin','scanner.bin','ic135.bin','ic137.bin')){
  if(-not (Test-Path -LiteralPath (Join-Path $RomDir $name) -PathType Leaf)){throw "P038 missing owner original ROM $name"}
 }
 if(-not (Test-Path -LiteralPath $Os31Floppy -PathType Leaf)){throw "P038 missing owner original OS3.1 floppy"}
+if(-not (Test-Path -LiteralPath $ChoirFloppy -PathType Leaf)){throw "P038 missing owner original Choir floppy"}
 # Isolate per-user plug-in defaults and avoid touching owner's production settings.
 $previous=$env:LOCALAPPDATA
 $isolated=Join-Path $env:TEMP ("125A-EII-P038-"+[guid]::NewGuid().ToString('N'))
@@ -22,7 +24,7 @@ New-Item -ItemType Directory -Path $isolated -Force | Out-Null
 $env:LOCALAPPDATA=$isolated
 try {
  Write-Host "P038 owner-only real Windows VST3 factory: original OS3.1 SAMPLE/host input/SAR/DISK7/PCM/fresh-IBStream..."
- & $exe $plugin $RomDir $Os31Floppy 'unused' 'original-windows-live-record'
+ & $exe $plugin $RomDir $Os31Floppy $ChoirFloppy 'original-windows-live-record'
  if($LASTEXITCODE -ne 0){throw "P038 actual original ROM Windows VST3 host input positive FAIL (exit $LASTEXITCODE)"}
  Write-Host 'P038 actual Windows VST3 original-firmware host input and project recall: PASS'
 }finally{
