@@ -65,6 +65,8 @@ jobs:
           python3 tools/apply-p032-s3528-production-default.py
           python3 tools/apply-p045-native-dac-default.py --verify
           python3 tools/apply-p045-native-dac-default.py
+          python3 tools/apply-p047-eii-display-name.py --verify
+          python3 tools/apply-p047-eii-display-name.py
           python3 tools/apply-p033-original-midi-transmitter.py --verify
           python3 tools/apply-p033-original-midi-transmitter.py
           python3 tests/p033_source_acceptance.py
@@ -76,7 +78,7 @@ jobs:
           python3 tools/apply-p036-sar-diagnostics.py --verify
           python3 tools/apply-p036-sar-diagnostics.py
           python3 tests/p036_sar_diagnostic_source_acceptance.py
-          python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py tools/apply-p045-native-dac-default.py tools/apply-p045-native-windows-host-test.py tests/p045_native_default_source_acceptance.py
+          python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py tools/apply-p045-native-dac-default.py tools/apply-p045-native-windows-host-test.py tests/p045_native_default_source_acceptance.py tools/apply-p047-eii-display-name.py tests/p047_eii_name_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
@@ -343,6 +345,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P045 native switched DAC default preflight failed" }
           python tools/apply-p045-native-dac-default.py
           if ($LASTEXITCODE -ne 0) { throw "P045 original EII native switched DAC integration failed" }
+          python tools/apply-p047-eii-display-name.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II factory class name preflight failed" }
+          python tools/apply-p047-eii-display-name.py
+          if ($LASTEXITCODE -ne 0) { throw "P047 E-MU Emulator II VST3 actual factory class rename failed" }
           python tools/apply-p033-original-midi-transmitter.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P033 SCN2651 transmitter original Z80 source preflight failed" }
           python tools/apply-p033-original-midi-transmitter.py
@@ -441,6 +447,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P045 original EII native DAC Windows host regression installation failed" }
           python tests/p045_native_default_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P045 source and negative mutant acceptance failed" }
+          python tests/p047_eii_name_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P047 factory name and VST3 package identity checks failed" }
           python tests/p032_s3528_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P032 original EII S3528 source and negative controls failed" }
           python tools/apply-p034-midi-out-host-test.py --verify
@@ -539,6 +547,33 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "default-filter"
           if ($LASTEXITCODE -ne 0) { throw "P029/P032/P045 original EII SSM2045 and native DAC/S3528 Windows factory, saved song, and override regression failed" }
+      - name: P047 actual renamed VST3 package and factory class - Windows COM, FUID and default-filter
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $original="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $renamed="upstream/eii-emu/build/win64-vst3/E-MU Emulator II.vst3"
+          $name="E-MU Emulator II.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          $out=Join-Path $renamed "Contents/x86_64-win"
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          $sourceDll=Join-Path $original "Contents/x86_64-win/EmulatorII-Custom.vst3"
+          Copy-Item -LiteralPath $sourceDll -Destination (Join-Path $out $name)
+          $originalHash=(Get-FileHash -LiteralPath $sourceDll -Algorithm SHA256).Hash
+          $copyHash=(Get-FileHash -LiteralPath (Join-Path $out $name) -Algorithm SHA256).Hash
+          if ($originalHash -ne $copyHash) { throw "P047 renamed VST3 executable changed bytes" }
+          $result=@(& $probe $renamed "unused" "unused" "unused" "default-filter" 2>&1)
+          $result | ForEach-Object { Write-Host $_ }
+          if($LASTEXITCODE -ne 0) {throw "P047 renamed VST3 failed real COM factory/state regression"}
+          $resultText=$result -join "`n"
+          if($resultText -notmatch "E-MU Emulator II") {
+             throw "P047 renamed VST3 does not report expected VST3 factory class name"
+          }
+          if($resultText -notmatch "P029 ACTUAL WINDOWS VST3 DEFAULT PASS") {
+             throw "P047 renamed VST3 class name present, but factory/state regression missing PASS"
+          }
+          Write-Host "P047 actual Windows renamed .vst3 bundle COM load, internal class and original state UID: PASS"
+
       - name: Verify original Windows hardware ROM/PCM host test rejects fake ROM (negative control)
         shell: pwsh
         run: |
