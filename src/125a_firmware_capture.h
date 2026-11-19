@@ -126,7 +126,16 @@ public:
 private:
     CapturePhase phase_=CapturePhase::Idle;
     std::uint64_t deadline_=0,duration_=0,baselineReads_=0;
-    // Original EII sample clock: 10 MHz / 360 = about 27,778 bytes/s.\n    // Deliberately permissive 10% floor detects stalled/one-byte captures\n    // without claiming hardware-exact firmware recording timing.\n    bool enoughReads(std::uint64_t reads)const noexcept {\n        if(reads<baselineReads_)return false;\n        const auto minimum=(duration_/ticksPerSecond)*2777ull +\n            ((duration_%ticksPerSecond)*2777ull)/ticksPerSecond;\n        return reads-baselineReads_>=minimum;\n    }\n    static bool contains(std::string_view s,std::string_view needle)noexcept{
+    // Original EII sample clock: 10 MHz / 360 = about 27,778 bytes/s.
+    // Deliberately permissive 10% floor detects stalled/one-byte captures
+    // without claiming hardware-exact firmware recording timing.
+    bool enoughReads(std::uint64_t reads)const noexcept {
+        if(reads<baselineReads_)return false;
+        const auto minimum=(duration_/ticksPerSecond)*2777ull +
+            ((duration_%ticksPerSecond)*2777ull)/ticksPerSecond;
+        return reads-baselineReads_>=minimum;
+    }
+    static bool contains(std::string_view s,std::string_view needle)noexcept{
         return s.find(needle)!=std::string_view::npos;
     }
     static bool preset(std::string_view s)noexcept{
