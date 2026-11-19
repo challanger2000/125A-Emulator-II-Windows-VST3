@@ -1,0 +1,39 @@
+name: P044 Windows PowerShell 5.1 private starter negative smoke
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-native-p044-bat-negatives:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run REAL cmd.exe one-click BAT and WinPS5.1 launcher without original media
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:RUNNER_TEMP 'P044-CMD-WinPS51-SMOKE'
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          Copy-Item 'tools/START-P044-TEST.bat' (Join-Path $root 'START-P044-TEST.bat')
+          Copy-Item 'tools/Test-Private-Original-EII-P044-Windows.ps1' (Join-Path $root 'Test-Private-Original-EII-P044-Windows.ps1')
+          $env:P044_CI='1'
+          Push-Location $root
+          try {
+            & cmd.exe /d /c 'call START-P044-TEST.bat'
+            $code=$LASTEXITCODE
+            if($code -ne 3) { throw "P044 private media absent must BLOCK early with exit 3, got $code" }
+            $log=Get-Content -LiteralPath 'P044-TEST-ERGEBNIS.txt' -Raw
+            if($log -notmatch 'P044 BLOCKED FEHLT IM PAKET') {
+              throw "P044 early fail did not create actionable result log"
+            }
+            if($log -match 'FINAL ORIGINAL-FIRMWARE NATIVE DAC WINDOWS VST3 MATRIX: PASS') {
+              throw "P044 synthetic/missing data incorrectly yielded PASS"
+            }
+          } finally { Pop-Location }
+          Write-Host 'P044 actual WinPS 5.1 CMD fail-closed starter negative PASS (no actual original EII boot)'
+          $global:LASTEXITCODE=0
