@@ -75,6 +75,9 @@ inline void adopt(PluginSettings& s,const fs::path& resources) {
     const auto os=uniqueOsDisk(resources/"OS");
     if(os.empty())return;
     if(!possibleOsDisk(s.osImage))s.osImage=os;
+    // The OS floppy is required for original firmware boot. Do NOT
+    // auto-mount a factory sample/bank disk: users choose their own sounds.
+    // Optional user media stays independent of the VST3 ROM/OS resources.
     if(s.hdd.empty()&&!possibleOsDisk(s.floppy))s.floppy=os;
     if(s.floppy==os)s.directImageWrites=false;
 }

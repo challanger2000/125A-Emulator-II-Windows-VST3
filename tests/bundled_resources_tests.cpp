@@ -31,6 +31,26 @@ int main(){
     bund::adopt(fresh,res);
     need(fresh.romFolder==rom&&fresh.floppy==os&&fresh.osImage==os,"same OS/ROM layout as EIII");
     need(!fresh.directImageWrites,"owner system file never direct-written");
+    // P046 distribution policy: the owner-private .vst3 bundle contains
+    // exact ROM+OS only; NO sample bank is to be auto-loaded.
+    const auto factory=res/"Factory"/"EII-Choir.emuiifd";
+    make(factory,573440);
+    eii::vst::PluginSettings cleanBoot;
+    bund::adopt(cleanBoot,res);
+    need(cleanBoot.romFolder==rom && cleanBoot.osImage==os && cleanBoot.floppy==os,
+         "P046 clean installation boots its own OS, not a bundled sound bank");
+    need(!cleanBoot.directImageWrites,"P046 original internal OS media is read-only");
+    // Even an incidental factory disk must not silently change startup.
+    eii::vst::PluginSettings preserved=cleanBoot;
+    bund::adopt(preserved,res);
+    need(preserved==cleanBoot,"P046 bundled firmware startup remains stable");
+    // No factory sample bank is a required dependency.
+    fs::remove(factory);
+    eii::vst::PluginSettings noSamples;
+    bund::adopt(noSamples,res);
+    need(noSamples.romFolder==rom&&noSamples.osImage==os&&noSamples.floppy==os,
+         "P046 native Emulator II starts without included sample banks");
+
     const auto original=fresh;
     bund::adopt(fresh,res);
     need(fresh==original,"idempotent resource autodetection");
