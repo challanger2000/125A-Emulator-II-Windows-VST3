@@ -393,7 +393,7 @@ jobs:
         shell: pwsh
         run: |
           $cc=Join-Path $env:LLVM_MINGW_ROOT "bin/x86_64-w64-mingw32-clang++.exe"
-          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-Iupstream/eii-emu/src' 'tests/p033_midi_tx_tests.cpp' '-o' 'p033_midi_tx_windows.exe'
+          & $cc '-std=c++23' '-O2' '-Wall' '-Wextra' '-Werror' '-static' '-Iupstream/eii-emu/src' 'tests/p033_midi_tx_tests.cpp' '-o' 'p033_midi_tx_windows.exe'
           if ($LASTEXITCODE -ne 0) { throw "P033 real Windows TX hardware compile failed" }
           & './p033_midi_tx_windows.exe'
           if ($LASTEXITCODE -ne 0) { throw "P033 real Windows original SCN2651 timed TX gate failed" }
