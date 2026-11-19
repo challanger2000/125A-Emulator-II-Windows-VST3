@@ -63,7 +63,7 @@ public:
         case CapturePhase::AwaitFirstRead:
             if(contains(lcd0,"Sample is good")||contains(lcd1,"Sample is good"))
                 return fail("Firmware ended recording before the WAV input started.");
-            if(sourceStarted&&reads>baselineReads_){
+            if(sourceStarted&&reads>baselineReads_ && sourceStartTick<=tick){
                 phase_=CapturePhase::Recording;
                 deadline_=sourceStartTick+duration_+ticksPerSecond/20; // 50 ms silent tail
                 if(tick>=deadline_){phase_=CapturePhase::StopHeld;deadline_=tick+holdTicks;return {CaptureAction::StopDown};}
@@ -73,13 +73,13 @@ public:
             // Near capacity the original firmware can stop by itself before
             // the synthetic STOP key. Never accept a prematurely truncated WAV.
             if(contains(lcd0,"Sample is good")||contains(lcd1,"Sample is good")){
-                if(tick+endTolerance<sourceStartTick+duration_)
+                if(tick+endTolerance<sourceStartTick+duration_ || !enoughReads(reads))
                     return fail("Insufficient free EII sample RAM: firmware ended before WAV completion.");
                 phase_=CapturePhase::ExitHeld;deadline_=tick+holdTicks;
                 return {CaptureAction::SampleDown};
             }
             if(tick>=deadline_){
-                if(reads<=baselineReads_)return fail("ADC never delivered sample bytes.");
+                if(!enoughReads(reads))return fail("ADC delivered too few sample bytes for the requested recording duration.");
                 phase_=CapturePhase::StopHeld;deadline_=tick+holdTicks;return {CaptureAction::StopDown};
             }
             break;
@@ -88,6 +88,7 @@ public:
             break;
         case CapturePhase::AwaitGood:
             if(contains(lcd0,"Sample is good")||contains(lcd1,"Sample is good")){
+                if(!enoughReads(reads))return fail("Firmware signalled completion without sufficient ADC byte reads.");
                 phase_=CapturePhase::ExitHeld;deadline_=tick+holdTicks;
                 return {CaptureAction::SampleDown};
             }
@@ -125,6 +126,15 @@ public:
 private:
     CapturePhase phase_=CapturePhase::Idle;
     std::uint64_t deadline_=0,duration_=0,baselineReads_=0;
+    // Original EII sample clock: 10 MHz / 360 = about 27,778 bytes/s.
+    // Deliberately permissive 10% floor detects stalled/one-byte captures
+    // without claiming hardware-exact firmware recording timing.
+    bool enoughReads(std::uint64_t reads)const noexcept {
+        if(reads<baselineReads_)return false;
+        const auto minimum=(duration_/ticksPerSecond)*2777ull +
+            ((duration_%ticksPerSecond)*2777ull)/ticksPerSecond;
+        return reads-baselineReads_>=minimum;
+    }
     static bool contains(std::string_view s,std::string_view needle)noexcept{
         return s.find(needle)!=std::string_view::npos;
     }
