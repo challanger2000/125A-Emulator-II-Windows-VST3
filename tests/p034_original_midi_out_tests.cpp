@@ -37,9 +37,10 @@ int main()try{
     a.reset();require(!a.feed(127,msg),"generation reset erases incomplete MIDI and running status");
     require(!a.feed(0x90,msg)&&!a.feed(60,msg)&&a.feed(0,msg)&&msg.data2==0,
             "velocity-zero original NoteOn emitted for downstream NoteOff conversion");
-    require(a.completed==11,"exactly 11 reconstructed channel messages, no fake system events");
+    require(a.completed==10,"exactly 10 reconstructed channel messages, no fake system events");
     require(a.unsupportedRealtime==3,"three original realtime messages counted");
-    require(a.unsupportedSystem==4,"F0,F0,F7,F2 system events counted");
+    require(a.skippedSysExBytes==4,"malformed status, nested F0 and 2 data bytes ignored inside SysEx");
+    require(a.unsupportedSystem==3,"F0,F7,F2 system events counted");
     std::cout<<"P034 original SCN2651 MIDI OUT parser channel voice, running status,"
              " realtime interruption, SysEx/system guards, reset PASS\n";
 }catch(const std::exception& e){std::cerr<<"P034 FAIL "<<e.what()<<'\n';return 1;}
