@@ -71,6 +71,9 @@ jobs:
           python3 tools/apply-p035-midi-out-gap-recovery.py --verify
           python3 tools/apply-p035-midi-out-gap-recovery.py
           python3 tests/p035_gap_source_acceptance.py
+          python3 tools/apply-p036-sar-diagnostics.py --verify
+          python3 tools/apply-p036-sar-diagnostics.py
+          python3 tests/p036_sar_diagnostic_source_acceptance.py
           python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
@@ -91,6 +94,10 @@ jobs:
           grep -Fq 'projectBankSnapshot()' upstream/eii-emu/src/vst3/plugin_engine.h
           grep -Fq 'e.autoImportWav(std::move(source))' upstream/eii-emu/src/vst3/plugin_editor.h
           grep -Fq 'wavStep();' upstream/eii-emu/src/vst3/plugin_engine.h
+      - name: P036 positive original Z80 SAR + IC86/S3528 analog recording and DAW host rate invariance
+        run: |
+          g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pthread -I upstream/eii-emu/src -I upstream/eii-emu/vendor/chips upstream/eii-emu/src/chips.cpp upstream/eii-emu/src/machine.cpp upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp tests/p036_original_host_sar_rates.cpp -o /tmp/p036_original_sar_rates
+          /tmp/p036_original_sar_rates
       - name: P035 full-SPSC MIDI UART output loss recovery and ghost-note counterproof
         run: |
           g++ -std=c++23 -O2 -Wall -Wextra -Werror -Wno-error=misleading-indentation -pedantic -I upstream/eii-emu/src tests/p035_midi_out_gap_recovery_tests.cpp -o /tmp/p035_midi_gap
@@ -338,6 +345,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P035 loss gap original MIDI OUT real-time safety patch failed" }
           python tests/p035_gap_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P035 fail-closed ghost MIDI NoteOn loss recovery source test failed" }
+          python tools/apply-p036-sar-diagnostics.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P036 real original SAR/analog diagnostic preflight failed" }
+          python tools/apply-p036-sar-diagnostics.py
+          if ($LASTEXITCODE -ne 0) { throw "P036 real original recording SAR diagnostic integration failed" }
+          python tests/p036_sar_diagnostic_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P036 original SAR unimplemented falsehood/physical calibration source regression failed" }
           python tests/p008_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P008 source integration acceptance failed" }
           python tests/p010_source_acceptance.py
@@ -427,6 +440,15 @@ jobs:
           if (-not $compiler) { throw "Pinned LLVM-MinGW compiler not found" }
           $toolchain = Split-Path (Split-Path $compiler.FullName -Parent) -Parent
           "LLVM_MINGW_ROOT=$toolchain" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: P036 run actual original Z80/SAR analog host input rate acceptance on Windows x64
+        shell: pwsh
+        run: |
+          $cc=Join-Path $env:LLVM_MINGW_ROOT "bin/x86_64-w64-mingw32-clang++.exe"
+          $args=@('-std=c++23','-O2','-Wall','-Wextra','-Werror','-Wno-error=misleading-indentation','-pthread','-static','-Iupstream/eii-emu/src','-Iupstream/eii-emu/vendor/chips','upstream/eii-emu/src/chips.cpp','upstream/eii-emu/src/machine.cpp','upstream/eii-emu/vendor/ssm2045-chip/src/chip.cpp','upstream/eii-emu/vendor/eiii-cem/eiii_cem3387_v2.cpp','upstream/eii-emu/vendor/eiii-cem/eiii_cem_cv_conditioning.cpp','tests/p036_original_host_sar_rates.cpp','-o','p036_original_sar_windows.exe')
+          & $cc @args
+          if ($LASTEXITCODE -ne 0) { throw "P036 Windows real original sample analog/SAR/Z80 integration compile failed" }
+          & './p036_original_sar_windows.exe'
+          if ($LASTEXITCODE -ne 0) { throw "P036 actual Windows original sample recording across DAW rates failed" }
       - name: P035 test original MIDI OUT overflow ghost-note prevention on real Windows UCRT
         shell: pwsh
         run: |
@@ -512,11 +534,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P035.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P036.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P035-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P036-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
@@ -532,12 +554,13 @@ jobs:
           Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
           Copy-Item 'QA/START-HERE-P034.md' 'artifact-p030-owner-qa/README-P034.md'
           Copy-Item 'QA/START-HERE-P035.md' 'artifact-p030-owner-qa/README-P035.md'
+          Copy-Item 'QA/START-HERE-P036.md' 'artifact-p030-owner-qa/README-P036.md'
           Copy-Item 'LICENSE' 'artifact-p030-owner-qa/GPL-3.0-LICENSE.txt'
           $bad=Get-ChildItem 'artifact-p030-owner-qa' -Recurse -File | Where-Object { $_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img') }
           if($bad){throw 'P030 private ROM/OS/sample files are forbidden in CI artifact'}
       - uses: actions/upload-artifact@v4
         with:
-          name: P035-Windows-Original-MIDI-POSITIVE-LOCAL-QA-TOOLS-NO-MEDIA
+          name: P036-Windows-Original-SAR-RECORD-LOCAL-QA-TOOLS-NO-MEDIA
           path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
