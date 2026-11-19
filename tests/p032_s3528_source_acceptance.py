@@ -29,6 +29,10 @@ assert "P032 S3528 REAL WINDOWS DEFAULT ON" in host
 assert "P032 old saved CEM project retains S3528 bypass OFF" in host
 assert "P032 explicit user preference S3528 bypass OFF remains honored" in host
 assert "P032 removing user override restores EII original S3528 ON" in host
+assert 'settings=replaceKey(settings,"s3528","1");' in host, "owner-only ROM+Choir test must actually enable S3528"
+assert 'in.status("applieds3528")=="1"' in host, "owner test must check applied S3528"
+assert 'saved host state lost original EII reconstruction route' in host
+assert 'reopened original project state unexpectedly disabled S3528' in host
 assert p032.patch(source.replace(p032.NEW,p032.OLD,1))==source, "positive default patch mutation"
 for mutant in (
     source,
