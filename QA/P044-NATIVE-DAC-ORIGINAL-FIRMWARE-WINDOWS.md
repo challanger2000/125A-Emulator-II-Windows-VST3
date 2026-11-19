@@ -1,6 +1,6 @@
 # P044 – Native DAC/Deglitch + S3528, original OS3.1 Windows x64 VST3 acceptance
 
-**Status: test implemented, REAL OWNER ORIGINAL MEDIA RUN PENDING.** The genuine original owner firmware/audio positive is NOT established by public CI.
+**Status: OWNER-PRIVATE ORIGINAL-FIRMWARE WINDOWS TEST PASS on 2026-11-19.** All five cases executed and all seven native DSP/S3528 acceptance gates passed with no original media modification. See [exact private owner result summary](P044-PRIVATE-ORIGINAL-FIRMWARE-WINDOWS-PASS.md). Public CI still independently proves only source, Windows build, starter behavior and no-media negative gates.
 
 P043 separately demonstrated a pronounced 100 Hz–8 kHz response difference between the native switched charge-transfer DAC and the 1-kHz-matched shortcut, using a deterministic DPCM sine generated with the nominal 50/51 recurrence. That provides motivation for P044, not independent hardware-calibration evidence.
 
