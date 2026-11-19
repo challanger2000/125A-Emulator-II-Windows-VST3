@@ -489,11 +489,11 @@ jobs:
           if ($private) { throw "No licensed ROM/media may enter public package" }
           New-Item -ItemType Directory -Force artifact | Out-Null
           Copy-Item $bundle -Destination artifact -Recurse
-          Copy-Item 'QA/START-HERE-P034.md' 'artifact/START-HERE.md'
+          Copy-Item 'QA/START-HERE-P035.md' 'artifact/START-HERE.md'
           Copy-Item 'LICENSE' 'artifact/GPL-3.0-LICENSE.txt'
       - uses: actions/upload-artifact@v4
         with:
-          name: P034-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
+          name: P035-125A-EmulatorII-Windows-x64-VST3-DEV-NOT-FINAL
           path: artifact/
           if-no-files-found: error
           retention-days: 5
@@ -508,12 +508,13 @@ jobs:
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
           Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
           Copy-Item 'QA/START-HERE-P034.md' 'artifact-p030-owner-qa/README-P034.md'
+          Copy-Item 'QA/START-HERE-P035.md' 'artifact-p030-owner-qa/README-P035.md'
           Copy-Item 'LICENSE' 'artifact-p030-owner-qa/GPL-3.0-LICENSE.txt'
           $bad=Get-ChildItem 'artifact-p030-owner-qa' -Recurse -File | Where-Object { $_.Extension -in @('.bin','.hfe','.emuiifd','.eii','.img') }
           if($bad){throw 'P030 private ROM/OS/sample files are forbidden in CI artifact'}
       - uses: actions/upload-artifact@v4
         with:
-          name: P034-Windows-Original-MIDI-OUT-LOCAL-QA-TOOLS-NO-MEDIA
+          name: P035-Windows-Original-MIDI-POSITIVE-LOCAL-QA-TOOLS-NO-MEDIA
           path: artifact-p030-owner-qa/
           if-no-files-found: error
           retention-days: 5
