@@ -23,6 +23,11 @@ public:
         // Timing clock, start/stop and active sensing may appear between the
         // two data bytes of a channel message: they NEVER cancel running status.
         if(c>=0xf8){++unsupportedRealtime;return false;}
+        if(sysEx_){
+            if(c==0xf7){sysEx_=false;++unsupportedSystem;}
+            else ++skippedSysExBytes;
+            return false; // malformed channel statuses cannot escape a SysEx
+        }
         if(c&0x80){
             if(c>=0xf0){
                 // SysEx and system common are deliberately not mapped to
