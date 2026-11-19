@@ -1,0 +1,34 @@
+name: P040 Windows PowerShell 5.1 START smoke
+on:
+  pull_request:
+    paths:
+      - 'tools/Test-Private-Original-EII-P040-Windows.ps1'
+      - 'tools/START-P040-TEST.bat'
+      - '.github/workflows/p040-powershell-51-start-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-powershell-start:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Verify script path defaults with Windows PowerShell 5.1 without private media
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $script=(Resolve-Path 'tools/Test-Private-Original-EII-P040-Windows.ps1').Path
+          $root=(Resolve-Path '.').Path
+          $bogus=Join-Path $root 'P040-NO-ROM-MUST-BLOCK'
+          $output = & powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -RomDir $bogus -Os31Floppy (Join-Path $bogus 'os31.emuiifd') -ChoirFloppy (Join-Path $bogus 'choir.emuiifd') 2>&1 | Out-String
+          $exit=$LASTEXITCODE
+          Write-Host $output
+          if($exit -eq 0) { throw 'P040 unexpectedly succeeded with no ROM or VST3' }
+          if($output -notmatch 'P040 SCRIPT_DIR ') { throw 'P040 Windows PowerShell 5.1 script folder was not resolved' }
+          if($output -notmatch 'P040 actual Windows VST3 COM test executable missing') { throw 'P040 expected missing-executable preflight, not an empty Path binding exception' }
+          if($output -match 'ParameterArgumentValidationErrorEmptyStringNotAllowed') { throw 'Original P040 empty Path bug persists' }
+          Write-Host 'P040 REAL WINDOWS POWERSHELL 5.1 SCRIPT PATH AND NO-ROM FAIL-CLOSED SMOKE: PASS'
+          $global:LASTEXITCODE=0

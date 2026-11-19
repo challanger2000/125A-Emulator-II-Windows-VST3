@@ -5,9 +5,20 @@ param(
  [Parameter(Mandatory=$true)][string]$RomDir,
  [Parameter(Mandatory=$true)][string]$Os31Floppy,
  [Parameter(Mandatory=$true)][string]$ChoirFloppy,
- [string]$KitDir=$PSScriptRoot
+ [string]$KitDir
 )
 $ErrorActionPreference='Stop'
+# On Windows PowerShell 5.1, $PSScriptRoot in a parameter default can be
+# empty before the invocation scope is fully established. Compute from the
+# absolute script filename at runtime instead of using that fragile default.
+if ([string]::IsNullOrWhiteSpace($KitDir)) {
+ $KitDir=[System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
+}
+if ([string]::IsNullOrWhiteSpace($KitDir)) {
+ throw 'P040 test folder could not be resolved from script path'
+}
+$KitDir=[System.IO.Path]::GetFullPath($KitDir)
+Write-Host ('P040 SCRIPT_DIR '+$KitDir)
 $exe=Join-Path $KitDir 'vst3_host_test.exe'
 $bundle=Join-Path $KitDir 'EmulatorII-Custom.vst3'
 $binary=Join-Path $bundle 'Contents\x86_64-win\EmulatorII-Custom.vst3'
