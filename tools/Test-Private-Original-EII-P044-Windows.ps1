@@ -31,7 +31,7 @@ $original=[ordered]@{
     'EII-Choir.emuiifd'=$choir
 }
 Log 'P044 Paketpruefung: VST3, Testhost und ALLE Originalmedien im selben Ordner.'
-foreach($path in @($exe,$binary)+@($original.Values)){
+foreach($path in @($exe,$binary)+@($original.Values | ForEach-Object { $_ })){
     if(!(Test-Path -LiteralPath $path -PathType Leaf)){
         Log ('P044 BLOCKED FEHLT IM PAKET: '+[System.IO.Path]::GetFileName($path))
         exit 3
@@ -63,10 +63,10 @@ $mediaChanged=$false
 try {
     Log 'P044 START: original Windows VST3 COM mit native=1 und S3528=1.'
     Log 'P044: 5 Original-Firmware-Laeufe, je SAMPLE/FORCE/STOP, SAVE BANK und MIDI-Audio.'
-    # Tee-Object captures full native exe stdout, unlike Start-Transcript on
-    # Windows PowerShell 5.1 (which omitted its METRICS/stage lines in P041).
+    # P041 Start-Transcript skipped native executable METRICS on WinPS 5.1.
+    # Capture every stdout/stderr line explicitly while displaying it live.
     & $exe $bundle $rom $os $choir 'original-windows-native-p044-matrix' 2>&1 |
-      Tee-Object -LiteralPath $log -Append
+      ForEach-Object { Log ([string]$_) }
     $exit=$LASTEXITCODE
 } catch {
     Log ('P044 HOST/TEST EXCEPTION: '+$_)
