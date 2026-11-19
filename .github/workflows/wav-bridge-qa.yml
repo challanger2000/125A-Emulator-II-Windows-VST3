@@ -413,6 +413,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host preflight failed" }
           python tools/apply-p029-default-host-test.py
           if ($LASTEXITCODE -ne 0) { throw "P029 Windows COM host patch failed" }
+          python tests/p040_original_matrix_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P040 original-ROM private matrix source acceptance failed" }
           python tests/p039_windows_c3_pitch_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P039 actual Windows recording MIDI C3 root pitch regression" }
           python tests/p029_host_source_acceptance.py
@@ -439,6 +441,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P038 original Windows COM host input preflight failed" }
           python tools/apply-p038-original-windows-host-input.py
           if ($LASTEXITCODE -ne 0) { throw "P038 Windows VST3 original recording host integration failed" }
+          python tools/apply-p040-original-windows-matrix.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P040 original VST3 host matrix source anchors failed" }
+          python tools/apply-p040-original-windows-matrix.py
+          if ($LASTEXITCODE -ne 0) { throw "P040 original VST3 host matrix install failed" }
           python tests/p026_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
@@ -543,6 +549,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-sar-qa-negative"
           if ($LASTEXITCODE -ne 0) { throw "P038 Windows VST3 COM private scanner invalid-input negative check failed" }
+      - name: P040 real Windows VST3 COM negative: must reject missing proprietary original firmware
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-windows-p040-matrix"
+          if ($LASTEXITCODE -ne 3) { throw "P040 false success/slow boot on missing original ROM/OS media" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
@@ -571,6 +584,8 @@ jobs:
           Copy-Item 'upstream/eii-emu/build/win64-vst3/vst3_host_test.exe' 'artifact-p030-owner-qa/vst3_host_test.exe'
           Copy-Item 'tools/Test-Private-Original-EII.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII.ps1'
           Copy-Item 'tools/Test-Private-Original-EII-P038-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P038-Windows.ps1'
+          Copy-Item 'tools/Test-Private-Original-EII-P040-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P040-Windows.ps1'
+          Copy-Item 'tools/START-P040-TEST.bat' 'artifact-p030-owner-qa/START-P040-TEST.bat'
           Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
           Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
