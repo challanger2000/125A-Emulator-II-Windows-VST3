@@ -19,6 +19,8 @@ Evidence: user-supplied `P041-TEST-ERGEBNIS(2).txt` from the private `125A-Emula
 - `P040 FINAL ORIGINAL-FIRMWARE WINDOWS VST3 TEST: PASS`
 - `P041 FINAL WINDOWS ORIGINAL FIRMWARE MATRIX: PASS`
 
+**P042 fidelity clarification:** The P040/P041 harness also forces `state=replaceKey(state,"native","0");` before each instance. Its PCM checks therefore exercise the **non-native DAC reference route**, not the optional switched DAC / 13202 deglitch reconstruction (`native=1`). P041 **must not** be used as an analog-hardware-accuracy or complete native-route PASS. See [P042 analog audit](P042-ANALOG-FIDELITY-GAP-AUDIT.md).
+
 The P040 C++ harness implements fresh original-firmware Windows VST3 cases at both rates, original scanner SAMPLE/FORCE/STOP, physical DISK7 save, VST3 project bank snapshot and MIDI C3 sample audition, with frequency and silence guards. The owner-only result is therefore meaningful evidence for that matrix. The previously failing 500 Hz step no longer caused a test failure in this run.
 
 ## Scope, transparency and limits
