@@ -31,3 +31,4 @@ jobs:
           if($output -notmatch 'P040 actual Windows VST3 COM test executable missing') { throw 'P040 expected missing-executable preflight, not an empty Path binding exception' }
           if($output -match 'ParameterArgumentValidationErrorEmptyStringNotAllowed') { throw 'Original P040 empty Path bug persists' }
           Write-Host 'P040 REAL WINDOWS POWERSHELL 5.1 SCRIPT PATH AND NO-ROM FAIL-CLOSED SMOKE: PASS'
+          $global:LASTEXITCODE=0
