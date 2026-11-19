@@ -568,6 +568,7 @@ jobs:
           Copy-Item 'upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3' 'artifact-p030-owner-qa' -Recurse
           Copy-Item 'upstream/eii-emu/build/win64-vst3/vst3_host_test.exe' 'artifact-p030-owner-qa/vst3_host_test.exe'
           Copy-Item 'tools/Test-Private-Original-EII.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII.ps1'
+          Copy-Item 'tools/Test-Private-Original-EII-P038-Windows.ps1' 'artifact-p030-owner-qa/Test-Private-Original-EII-P038-Windows.ps1'
           Copy-Item 'QA/START-HERE-P030.md' 'artifact-p030-owner-qa/README-P030.md'
           Copy-Item 'QA/START-HERE-P032.md' 'artifact-p030-owner-qa/README-P032.md'
           Copy-Item 'QA/START-HERE-P033.md' 'artifact-p030-owner-qa/README-P033.md'
