@@ -56,3 +56,66 @@ jobs:
           # CMD is expected to return failure for the deliberately absent VST3.
           # Clear the resulting LASTEXITCODE after all fail-closed assertions pass.
           $global:LASTEXITCODE=0
+      - name: P041 real Windows CMD auto-discovery launcher smoke (no original ROM)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $scratch=Join-Path $env:RUNNER_TEMP 'P041-Launcher-Windows-Test'
+          $kit=Join-Path $scratch 'P041-Current-Test'
+          $old=Join-Path $scratch '125A-Emulator-II-P040-Test'
+          New-Item -ItemType Directory -Force -Path $kit | Out-Null
+          Copy-Item 'tools/START-P041-TEST.bat' (Join-Path $kit 'START-P041-TEST.bat')
+          Copy-Item 'tools/P041-AutoLauncher.ps1' (Join-Path $kit 'P041-AutoLauncher.ps1')
+          Copy-Item 'tools/Test-Private-Original-EII-P040-Windows.ps1' (Join-Path $kit 'Test-Private-Original-EII-P040-Windows.ps1')
+          New-Item -ItemType File -Force -Path (Join-Path $kit 'vst3_host_test.exe') | Out-Null
+          $vst=Join-Path $kit 'EmulatorII-Custom.vst3/Contents/x86_64-win'
+          New-Item -ItemType Directory -Force -Path $vst | Out-Null
+          New-Item -ItemType File -Force -Path (Join-Path $vst 'EmulatorII-Custom.vst3') | Out-Null
+          $env:P041_CI='1'
+          Push-Location $kit
+          try {
+            & cmd.exe /d /c 'call START-P041-TEST.bat'
+            $negative=$LASTEXITCODE
+            $log=Get-Content -LiteralPath 'P041-TEST-ERGEBNIS.txt' -Raw
+            if ($negative -ne 3) { throw "P041 absent-media negative must exit 3, got $negative" }
+            if ($log -notmatch 'Originalmedien nicht gefunden') {
+              throw 'P041 absent-media negative did not print actionable result'
+            }
+            if ($log -match 'Supply values for the following parameters') {
+              throw 'P041 launcher unexpectedly prompts for mandatory PowerShell args'
+            }
+          } finally { Pop-Location }
+          # Synthetic launcher-only probe of media-location forwarding. The
+          # executable and ROM files here are deliberately empty placeholders.
+          # This step can NEVER count as genuine firmware or audio acceptance.
+          $rom=Join-Path $old 'Original-ROM'
+          $disk=Join-Path $old 'Original-Medien'
+          New-Item -ItemType Directory -Force -Path $rom,$disk | Out-Null
+          foreach ($f in @('main.bin','scanner.bin','ic135.bin','ic137.bin')) {
+            New-Item -ItemType File -Force -Path (Join-Path $rom $f) | Out-Null
+          }
+          New-Item -ItemType File -Force -Path (Join-Path $disk 'Emulator-II-OS31.emuiifd') | Out-Null
+          New-Item -ItemType File -Force -Path (Join-Path $disk 'EII-Choir.emuiifd') | Out-Null
+          @'
+          param([string]$RomDir,[string]$Os31Floppy,[string]$ChoirFloppy)
+          if (!(Test-Path -LiteralPath (Join-Path $RomDir 'main.bin'))) {exit 7}
+          if (!(Test-Path -LiteralPath $Os31Floppy)) {exit 8}
+          if (!(Test-Path -LiteralPath $ChoirFloppy)) {exit 9}
+          Write-Host 'P041 SYNTHETIC LAUNCHER ARGUMENTS ONLY: PASS (NO FIRMWARE BOOT)'
+          exit 0
+          '@ | Set-Content -LiteralPath (Join-Path $kit 'Test-Private-Original-EII-P040-Windows.ps1') -Encoding UTF8
+          Push-Location $kit
+          try {
+            & cmd.exe /d /c 'call START-P041-TEST.bat'
+            $positive=$LASTEXITCODE
+            $log=Get-Content -LiteralPath 'P041-TEST-ERGEBNIS.txt' -Raw
+            if ($positive -ne 0) { throw "P041 synthetic launcher argument proof failed: $positive" }
+            if ($log -notmatch 'Originalmedien im bisherigen lokalen Ordner gefunden') {
+              throw 'P041 did not automatically discover sibling prior-P040 private-media directory'
+            }
+            if ($log -notmatch 'P041 FINAL WINDOWS ORIGINAL FIRMWARE MATRIX: PASS') {
+              throw 'P041 launcher did not preserve success exit code'
+            }
+          } finally { Pop-Location }
+          Write-Host 'P041 REAL WINDOWS CMD AUTO-LOCATION FAIL-CLOSED + SYNTHETIC ARGUMENT SMOKE: PASS (NO ORIGINAL ROM)'
+          $global:LASTEXITCODE=0
