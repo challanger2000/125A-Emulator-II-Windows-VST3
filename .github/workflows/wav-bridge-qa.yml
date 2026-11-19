@@ -429,6 +429,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P034 original real Windows MIDI event output COM probe installation failed" }
           python tests/p034_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P034 original UART MIDI output and VST3 event source contract failed" }
+          python tools/apply-p038-original-windows-host-input.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P038 original Windows COM host input preflight failed" }
+          python tools/apply-p038-original-windows-host-input.py
+          if ($LASTEXITCODE -ne 0) { throw "P038 Windows VST3 original recording host integration failed" }
           python tests/p026_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows COM dual-instance audio/source contract failed" }
       - name: Install pinned LLVM-MinGW 20261006 UCRT x64
@@ -526,6 +530,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-midi-out-bus"
           if ($LASTEXITCODE -ne 0) { throw "P034 original Windows MIDI event output real COM/no-fake-output test failed" }
+      - name: P038 validate actual Windows COM original hardware test control negative cases (NO MEDIA)
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "unused" "unused" "unused" "original-windows-sar-qa-negative"
+          if ($LASTEXITCODE -ne 0) { throw "P038 Windows VST3 COM private scanner invalid-input negative check failed" }
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
