@@ -27,7 +27,7 @@ static double p038Freq(const std::vector<float>& pcm) {
     const std::size_t first=7200,last=std::min<std::size_t>(43200,pcm.size());
     p038Need(last-first>=24000,"PCM insufficient for independent frequency test");
     double maxEnergy=0,best=0;
-    for(int f=400;f<=480;++f) {
+    for(int f=200;f<=1200;++f) {
         const double theta=2*3.14159265358979323846*f/48000.0;
         const double c=2*std::cos(theta);
         double u=0,v=0;
@@ -64,6 +64,9 @@ static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& fact
     settings=replaceKey(settings,"floppy",choir);
     settings=replaceKey(settings,"osimage",os31);
     settings=replaceKey(settings,"memory1mb","0");
+    // Host MIDI C3=60 must be translated to the original Emulator II MIDI root
+    // note 48. Without this flag, the recording is replayed one octave high.
+    settings=replaceKey(settings,"wavmidic3","1");
     settings=replaceKey(settings,"autoboot","1");
     settings=replaceKey(settings,"model","5");
     settings=replaceKey(settings,"native","0");
@@ -186,10 +189,15 @@ static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& fact
         }
         p038Need(peak>0.001,"newly recorded voice produced silent Windows PCM");
         const double f=p038Freq(pcm);
-        p038Need(std::abs(f-440.0)<=5.0,"recorded output is not 440Hz input");
+        std::cout<<"P039 actual_playback_peak="<<peak
+                 <<" measured_dominant_hz="<<f<<" requested_input_hz=440"
+                 <<" C3_remap=on"<<"\n";
+        p038Need(std::abs(f-440.0)<=5.0,
+                 "recorded output is not 440Hz input (measured "+std::to_string(f)+" Hz)");
         return {f,std::move(pcm)};
     };
     const auto first=play(in);
+    std::cout<<"P039 first_440Hz_recording_hz="<<first.first<<"\n";
     in.shutdown();
     p038Need(eiiThreads()==0,"first Windows original hardware instance leaked threads");
 
@@ -207,6 +215,7 @@ static int p038WindowsOriginalRecording(const VST3::Hosting::PluginFactory& fact
     }
     p038Need(ready,"fresh original OS could not restore recorded project bank");
     const auto second=play(reopened);
+    std::cout<<"P039 reopened_440Hz_recording_hz="<<second.first<<"\n";
     reopened.shutdown();
     p038Need(eiiThreads()==0,"reopened original Windows VST3 leaked threads");
     std::cout<<"P038 WINDOWS VST3 COM ORIGINAL OS31 HOST INPUT -> SAR -> "
