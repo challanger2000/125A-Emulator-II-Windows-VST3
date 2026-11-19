@@ -13,10 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 UP = ROOT / "upstream/eii-emu"
 SOURCE = UP / "src/vst3/plugin_editor.h"
 OLD_MENU = '        AppendMenuW(menu,MF_STRING,60,L"Status...");'
-NEW_MENU = OLD_MENU + '\n        AppendMenuW(menu,MF_STRING,61,L"About / credits...");'
+NEW_MENU = OLD_MENU + '\n        AppendMenuW(menu,MF_STRING,9610,L"About / credits...");'
 OLD_CASE = "        case 60:showStatus();break;"
 NEW_CASE = r'''        case 60:showStatus();break;
-        case 61:ask(
+        case 9610:ask(
             L"Original emulator software: Tuth (github.com/Tuth/eii-emu)\n"
             L"125A adaptation: Windows VST3 integration, packaging and QA.\n\n"
             L"Upstream contributors: ChatGPT / Codex and Claude Code.\n"
@@ -27,8 +27,8 @@ NEW_CASE = r'''        case 60:showStatus();break;
 def patch(source):
     if source.count(OLD_MENU) != 1 or source.count(OLD_CASE) != 1:
         raise RuntimeError("P048 settings-menu source anchors missing or ambiguous")
-    if "case 61:" in source or "MF_STRING,61," in source:
-        raise RuntimeError("P048 settings-menu command ID 61 already occupied")
+    if "case 9610:" in source or "MF_STRING,9610," in source:
+        raise RuntimeError("P048 settings-menu command ID 9610 already occupied")
     return source.replace(OLD_MENU, NEW_MENU).replace(OLD_CASE, NEW_CASE)
 
 def main():
