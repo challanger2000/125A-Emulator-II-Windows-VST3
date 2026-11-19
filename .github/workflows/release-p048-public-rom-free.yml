@@ -1,0 +1,85 @@
+name: Publish P048 public ROM-free Emulator II release candidate
+
+on:
+  workflow_run:
+    workflows: ["WAV input bridge (non-release)"]
+    types: [completed]
+
+# Publish only after the main-branch Windows/native build and original validator
+# pass. Never accept artifacts from an untrusted PR or non-main head.
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release-p048:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out EXACT passing main commit for release notes
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Download ROM-free artifact from exact passing workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: P048-E-MU-Emulator-II-PUBLIC-RELEASE-CANDIDATE-NO-ROM
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: release-assets
+      - name: Assert binary/source SHA256, attribution and no proprietary media
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum --check SHA256SUMS.txt
+          python3 - <<'PY'
+          import json,zipfile
+          from pathlib import Path
+          binary=Path("125A-E-MU-Emulator-II-P048-PUBLIC-VST3-NO-ROM.zip")
+          source=Path("125A-E-MU-Emulator-II-P048-CORRESPONDING-SOURCE.zip")
+          blocked={".bin",".rom",".raw",".hfe",".emuiifd",".eii",".img",".sf2",".sbk",".iso",".vhd",".vhdx",".wav",".aif",".aiff",".flac",".mp3",".ogg"}
+          with zipfile.ZipFile(binary) as z:
+              names=z.namelist()
+              assert z.testzip() is None
+              assert "E-MU Emulator II.vst3/Contents/x86_64-win/E-MU Emulator II.vst3" in names
+              assert "E-MU Emulator II.vst3/Contents/Resources/PROJECT-CREDITS.md" in names
+              assert "E-MU Emulator II.vst3/Contents/Resources/LICENSE-GPL-3.0.txt" in names
+              assert not any(Path(n).suffix.lower() in blocked for n in names)
+              assert b"Tuth" in z.read("E-MU Emulator II.vst3/Contents/Resources/PROJECT-CREDITS.md")
+          with zipfile.ZipFile(source) as z:
+              names=z.namelist()
+              assert z.testzip() is None
+              manifest_paths=[p for p in names if p.endswith("/SOURCE-SHA256-MANIFEST.json")]
+              assert len(manifest_paths)==1
+              manifest=json.loads(z.read(manifest_paths[0]))
+              assert manifest["upstream_git_commit"]=="e345bcf00af8a066ebace9168cf0b6c3a40ca164"
+              assert manifest["original_creator"]=="Tuth"
+              assert manifest["source_files"] and len(manifest["source_files"])>50
+          print("P048 public release original developer/GPL/corresponding source/media gates PASS")
+          PY
+      - name: Publish first verified P048 release candidate (no ROM/OS)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          TAG="v0.1.0-rc.1"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; never overwrite published files."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            release-assets/125A-E-MU-Emulator-II-P048-PUBLIC-VST3-NO-ROM.zip \
+            release-assets/125A-E-MU-Emulator-II-P048-CORRESPONDING-SOURCE.zip \
+            release-assets/SHA256SUMS.txt \
+            --target "$TESTED_SHA" \
+            --title "125A E-MU Emulator II v0.1.0-rc.1 (P048, ROM-free)" \
+            --notes-file "RELEASE-NOTES-P048.md" \
+            --prerelease
