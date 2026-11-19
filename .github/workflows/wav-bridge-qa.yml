@@ -63,6 +63,8 @@ jobs:
           python3 tests/p029_default_source_tests.py
           python3 tools/apply-p032-s3528-production-default.py --verify
           python3 tools/apply-p032-s3528-production-default.py
+          python3 tools/apply-p045-native-dac-default.py --verify
+          python3 tools/apply-p045-native-dac-default.py
           python3 tools/apply-p033-original-midi-transmitter.py --verify
           python3 tools/apply-p033-original-midi-transmitter.py
           python3 tests/p033_source_acceptance.py
@@ -74,7 +76,7 @@ jobs:
           python3 tools/apply-p036-sar-diagnostics.py --verify
           python3 tools/apply-p036-sar-diagnostics.py
           python3 tests/p036_sar_diagnostic_source_acceptance.py
-          python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py
+          python3 -m py_compile tools/apply-p034-midi-out-host-test.py tests/p034_source_acceptance.py tools/apply-p045-native-dac-default.py tools/apply-p045-native-windows-host-test.py tests/p045_native_default_source_acceptance.py
           python3 -m py_compile tools/apply-p030-original-windows-test.py tests/p030_original_windows_source_acceptance.py tools/apply-p032-s3528-windows-host-test.py tests/p032_s3528_source_acceptance.py
           python3 tests/p008_source_acceptance.py
           python3 tests/p010_source_acceptance.py
@@ -337,6 +339,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P032 original S3528 new-instance default preflight failed" }
           python tools/apply-p032-s3528-production-default.py
           if ($LASTEXITCODE -ne 0) { throw "P032 S3528 production new-instance integration failed" }
+          python tools/apply-p045-native-dac-default.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P045 native switched DAC default preflight failed" }
+          python tools/apply-p045-native-dac-default.py
+          if ($LASTEXITCODE -ne 0) { throw "P045 original EII native switched DAC integration failed" }
           python tools/apply-p033-original-midi-transmitter.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P033 SCN2651 transmitter original Z80 source preflight failed" }
           python tools/apply-p033-original-midi-transmitter.py
@@ -429,6 +435,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "P032 real Windows S3528 host acceptance preflight failed" }
           python tools/apply-p032-s3528-windows-host-test.py
           if ($LASTEXITCODE -ne 0) { throw "P032 real Windows S3528 host acceptance integration failed" }
+          python tools/apply-p045-native-windows-host-test.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P045 native DAC real Windows host regression preflight failed" }
+          python tools/apply-p045-native-windows-host-test.py
+          if ($LASTEXITCODE -ne 0) { throw "P045 original EII native DAC Windows host regression installation failed" }
+          python tests/p045_native_default_source_acceptance.py
+          if ($LASTEXITCODE -ne 0) { throw "P045 source and negative mutant acceptance failed" }
           python tests/p032_s3528_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P032 original EII S3528 source and negative controls failed" }
           python tools/apply-p034-midi-out-host-test.py --verify
@@ -520,13 +532,13 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "windows-audio-safety"
           if ($LASTEXITCODE -ne 0) { throw "P026 Windows real VST3 COM audio/lifecycle acceptance failed" }
-      - name: Test real Windows VST3 original EII SSM2045 + S3528 ON default, legacy OFF, and explicit saved overrides
+      - name: Test real Windows VST3 original EII SSM2045 + native AM6072 DAC ON + S3528 ON default, legacy OFF and explicit saved overrides
         shell: pwsh
         run: |
           $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "default-filter"
-          if ($LASTEXITCODE -ne 0) { throw "P029/P032 original SSM2045/S3528 Windows factory, saved song, and user override regression failed" }
+          if ($LASTEXITCODE -ne 0) { throw "P029/P032/P045 original EII SSM2045 and native DAC/S3528 Windows factory, saved song, and override regression failed" }
       - name: Verify original Windows hardware ROM/PCM host test rejects fake ROM (negative control)
         shell: pwsh
         run: |
