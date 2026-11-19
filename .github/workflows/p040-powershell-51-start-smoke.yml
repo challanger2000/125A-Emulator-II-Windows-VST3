@@ -110,11 +110,30 @@ jobs:
             $positive=$LASTEXITCODE
             $log=Get-Content -LiteralPath 'P041-TEST-ERGEBNIS.txt' -Raw
             if ($positive -ne 0) { throw "P041 synthetic launcher argument proof failed: $positive" }
-            if ($log -notmatch 'Originalmedien im bisherigen lokalen Ordner gefunden') {
+            if ($log -notmatch 'Vollstaendige Originalmedien in einem lokalen Testordner gefunden') {
               throw 'P041 did not automatically discover sibling prior-P040 private-media directory'
             }
             if ($log -notmatch 'P041 FINAL WINDOWS ORIGINAL FIRMWARE MATRIX: PASS') {
               throw 'P041 launcher did not preserve success exit code'
+            }
+          } finally { Pop-Location }
+          # Previous media may now be in an arbitrarily renamed nested kit;
+          # this is the exact owner's failure after P041 only checked a literal
+          # folder name. The files are still synthetic zero-byte placeholders.
+          $nested=Join-Path $scratch 'Renamed-Diagnostics'
+          New-Item -ItemType Directory -Force -Path $nested | Out-Null
+          Move-Item -LiteralPath $old -Destination (Join-Path $nested 'MyOld-P040-FIX2')
+          Push-Location $kit
+          try {
+            & cmd.exe /d /c 'call START-P041-TEST.bat'
+            $nestedCode=$LASTEXITCODE
+            $nestedLog=Get-Content -LiteralPath 'P041-TEST-ERGEBNIS.txt' -Raw
+            if ($nestedCode -ne 0) { throw "Renamed nested synthetic original media not discovered: $nestedCode" }
+            if ($nestedLog -notmatch 'Vollstaendige Originalmedien in einem lokalen Testordner gefunden') {
+                throw 'P041 renamed nested media not discovered by bounded directory search'
+            }
+            if ($nestedLog -notmatch 'P041 FINAL WINDOWS ORIGINAL FIRMWARE MATRIX: PASS') {
+                throw 'P041 renamed nested media failed original harness argument forwarding'
             }
           } finally { Pop-Location }
           Write-Host 'P041 REAL WINDOWS CMD AUTO-LOCATION FAIL-CLOSED + SYNTHETIC ARGUMENT SMOKE: PASS (NO ORIGINAL ROM)'
