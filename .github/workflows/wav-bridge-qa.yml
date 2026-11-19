@@ -556,6 +556,8 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-p040-matrix"
           if ($LASTEXITCODE -ne 3) { throw "P040 false success/slow boot on missing original ROM/OS media" }
+          Write-Host "P040 genuine-ROM absent case correctly BLOCKED (negative control PASS)"
+          $global:LASTEXITCODE=0
       - name: Verify installable bundle and no included private media
         shell: pwsh
         run: |
