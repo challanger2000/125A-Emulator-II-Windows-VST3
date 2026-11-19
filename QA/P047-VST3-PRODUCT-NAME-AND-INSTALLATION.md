@@ -41,3 +41,11 @@ No `Choir`/factory soundbank, no separate test executables and no external ROM f
 - Owner's original ROM and OS bytes stay private and are only included in the owner-specific ZIP, never public GitHub/CI.
 
 A real Studio One UI/scan from the final owner-private renamed path is still a separate last-mile test; it must not be marked PASS based on source or generic COM verification.
+
+## 2026-11-19 signed-off automation + private package
+
+GitHub Actions [run #44571195085](https://github.com/challanger2000/125A-Emulator-II-Windows-VST3/actions/runs/44571195085) **PASS** in both Windows and Linux jobs. Actual Windows VST3 host opened the renamed **outer** `E-MU Emulator II.vst3` bundle and the renamed **inner** `E-MU Emulator II.vst3` PE file, confirmed the reported factory class name and performed the original factory/state regression (`P029 ACTUAL WINDOWS VST3 DEFAULT PASS 0 failure(s)`). The original Steinberg validator reported **47 tests passed, 0 failed**. Public source identity gates **7/7** and negative mutations **3/3** passed.
+
+Owner-private deliverable `125A-E-MU-Emulator-II-P047-VST3-KOMPLETT-PRIVAT.zip` was locally built by taking the **new CI-built P047 PE binary**, renaming both its installed bundle directory and PE file to exactly the user-approved name, and adding the **four required ROMs, three optional ROM variants and one genuine OS 3.1 disk** under `Contents/Resources` from owner P046 material. Verified `ZipFile.testzip()`, all internal filenames, no factory/Choir, and all **five P044 owner SHA256 checks**. CI-built P047 PE binary SHA-256 `B9F0D6B7B1E413C9DB29FF3CE946A5E3EA2440B4F7631C89E184622229D507D5`. Private delivery ZIP SHA-256 `FD716FFE7922C88657D45A5D2427D04B05361A56C67DFBF4DF93492B1C5A4024`.
+
+**Do not claim actual original-OS startup in Studio One from this renamed path was executed.** The real Windows COM host proves the renaming did not break plugin factory loading, and the original media were verified and packaged, but the end-user DAW scan/boot remains an explicit final-practice gate.
