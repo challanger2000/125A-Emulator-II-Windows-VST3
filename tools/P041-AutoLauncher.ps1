@@ -24,17 +24,86 @@ if (-not (Test-Path -LiteralPath (Join-Path $kit 'Test-Private-Original-EII-P040
     Report 'BLOCKED: Original-Firmware-Testskript fehlt.'
     exit 2
 }
+# Reuse previously working original media in place, even if the old P040
+# test folder has been renamed, duplicated, or nested after ZIP extraction.
+# Only scan local user-selected roots and conventional download locations.
+# Never copy/read media bytes, browse entire drives, or upload anything.
 $candidates=New-Object 'System.Collections.Generic.List[string]'
-if (-not [string]::IsNullOrWhiteSpace($MediaRoot)) { $candidates.Add($MediaRoot) }
-$candidates.Add($kit)
+$seen=New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+$script:visited=0
+$script:maxVisited=3500
+function Add-Root([string]$root) {
+    if([string]::IsNullOrWhiteSpace($root)){return}
+    try {
+        $full=[System.IO.Path]::GetFullPath($root)
+        if((Test-Path -LiteralPath $full -PathType Container) -and $seen.Add($full)) {
+            $candidates.Add($full)
+        }
+    } catch {}
+}
+function Scan-Tree([string]$base,[int]$depth) {
+    if([string]::IsNullOrWhiteSpace($base) -or
+       -not (Test-Path -LiteralPath $base -PathType Container)){return}
+    $queue=New-Object System.Collections.Queue
+    $queue.Enqueue([pscustomobject]@{Path=$base;Level=0})
+    while($queue.Count -gt 0 -and $script:visited -lt $script:maxVisited){
+        $entry=$queue.Dequeue()
+        $script:visited++
+        Add-Root $entry.Path
+        if($entry.Level -ge $depth){continue}
+        $children=@(Get-ChildItem -LiteralPath $entry.Path -Directory -ErrorAction SilentlyContinue)
+        foreach($child in $children) {
+            # Avoid descending into unrelated large development/data folders.
+            if($child.Name -in @('node_modules','.git','.venv','Windows',
+                                'Program Files','Program Files (x86)','$Recycle.Bin')) {continue}
+            $queue.Enqueue([pscustomobject]@{
+                Path=$child.FullName
+                Level=($entry.Level+1)
+            })
+        }
+    }
+}
+Add-Root $MediaRoot
+Add-Root $kit
 $parent=[System.IO.Directory]::GetParent($kit)
-if ($null -ne $parent) {
-    $candidates.Add((Join-Path $parent.FullName '125A-Emulator-II-P040-Test'))
+if($null -ne $parent) {
+    Add-Root (Join-Path $parent.FullName '125A-Emulator-II-P040-Test')
+    # ZIP tools sometimes add an extra enclosing directory.
+    Add-Root $parent.FullName
+    if($null -ne $parent.Parent) {
+        Add-Root (Join-Path $parent.Parent.FullName '125A-Emulator-II-P040-Test')
+    }
 }
 $homeDir=[Environment]::GetFolderPath('UserProfile')
-if (-not [string]::IsNullOrWhiteSpace($homeDir)) {
-    $candidates.Add((Join-Path $homeDir 'Downloads\125A-Emulator-II-P040-Test'))
+$downloads=$null
+if(-not [string]::IsNullOrWhiteSpace($homeDir)) {
+    $downloads=Join-Path $homeDir 'Downloads'
+    Add-Root (Join-Path $downloads '125A-Emulator-II-P040-Test')
 }
+# Windows permits Explorer's Downloads folder to be redirected (e.g. OneDrive
+# or another volume). Resolve the per-user Known Folder registry entry.
+$redirected=$null
+try {
+    $key=Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders' -ErrorAction Stop
+    $prop=$key.PSObject.Properties['{374DE290-123F-4565-9164-39C4925E467B}']
+    if($null -ne $prop -and -not [string]::IsNullOrWhiteSpace([string]$prop.Value)){
+        $redirected=[Environment]::ExpandEnvironmentVariables([string]$prop.Value)
+    }
+} catch {}
+# Fast, exact guesses first, before wider bounded directory walks.
+if($redirected){Add-Root (Join-Path $redirected '125A-Emulator-II-P040-Test')}
+# A renamed P040 folder, duplicate extraction, or nested test kit can be up to
+# four directory levels below Downloads; no global filesystem traversal.
+Write-Host 'P041: Suche lokale Originalmedien in frueheren Testordnern ...'
+if($MediaRoot){Scan-Tree $MediaRoot 3}
+if($null -ne $parent){Scan-Tree $parent.FullName 2}
+if($downloads){Scan-Tree $downloads 4}
+if($redirected -and $redirected -ne $downloads){Scan-Tree $redirected 4}
+$desktop=[Environment]::GetFolderPath('Desktop')
+$documents=[Environment]::GetFolderPath('MyDocuments')
+if($desktop){Scan-Tree $desktop 2}
+if($documents){Scan-Tree $documents 2}
+Report ('P041: Untersuchte lokale Testordner: '+$candidates.Count)
 $media=$null
 foreach ($root in $candidates) {
     $rom=Join-Path $root 'Original-ROM'
@@ -62,11 +131,11 @@ foreach ($root in $candidates) {
 }
 if ($null -eq $media) {
     Report 'BLOCKED: Originalmedien nicht gefunden.'
-    Report 'Gesucht wurde im neuen Ordner und im bisherigen Downloads\125A-Emulator-II-P040-Test.'
+    Report 'Geprueft: bisheriger Testordner, umbenannte/nestete Downloads, Desktop, Dokumente und umgeleitete Downloads.'
     Report 'Die Originalmedien muessen lokal bleiben; nicht in GitHub hochladen.'
     exit 3
 }
-Report 'P041: Originalmedien im bisherigen lokalen Ordner gefunden.'
+Report 'P041: Vollstaendige Originalmedien in einem lokalen Testordner gefunden.'
 Report 'P041: Reale Windows-VST3-Tests mit neuer Original-Firmware-Speicherdiagnose starten.'
 Report 'P041: Der Test zeigt die einzelnen Faelle und Save-Phasen direkt im Fenster.'
 $env:P040_LOG=$log
