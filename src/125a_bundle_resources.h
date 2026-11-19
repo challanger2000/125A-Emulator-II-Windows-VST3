@@ -51,6 +51,12 @@ inline fs::path uniqueOsDisk(const fs::path& folder) {
     }
     return ec?fs::path{}:found;
 }
+// Only this exact known factory floppy is auto-selected. Other owner disks
+// remain user-selected, so adding a second bank cannot alter boot behavior.
+inline fs::path bundledFactoryChoir(const fs::path& resources) {
+    const auto choir=resources/"Factory"/"EII-Choir.emuiifd";
+    return fileSize(choir,573440)?choir:fs::path{};
+}
 inline fs::path moduleResources(){
 #ifdef _WIN32
     HMODULE mod=nullptr;
@@ -75,8 +81,14 @@ inline void adopt(PluginSettings& s,const fs::path& resources) {
     const auto os=uniqueOsDisk(resources/"OS");
     if(os.empty())return;
     if(!possibleOsDisk(s.osImage))s.osImage=os;
-    if(s.hdd.empty()&&!possibleOsDisk(s.floppy))s.floppy=os;
-    if(s.floppy==os)s.directImageWrites=false;
+    if(s.hdd.empty()&&!possibleOsDisk(s.floppy)) {
+        // Genuine P044 mode: original OS 3.1 for boot, original Choir bank
+        // mounted as the factory floppy. Both live INSIDE the .vst3 bundle.
+        const auto choir=bundledFactoryChoir(resources);
+        s.floppy=choir.empty()?os:choir;
+    }
+    if(s.floppy==os||s.floppy==bundledFactoryChoir(resources))
+        s.directImageWrites=false;
 }
 inline void adopt(PluginSettings& s){adopt(s,moduleResources());}
 }
