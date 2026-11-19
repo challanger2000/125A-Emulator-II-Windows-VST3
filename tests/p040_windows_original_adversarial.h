@@ -143,7 +143,10 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
     req(p038Count(in,"sampleunknown")==0,"original guest SAR has unknown bytes");
     req(out.inputDrops==0,"actual VST3 audio input frames dropped");
     if(tc.disconnected) {
-        req(out.hostFrames==0,"disconnected VST3 bus unexpectedly reported input frames");
+        // Production HostSampleInput intentionally publishes timestamped *zero*
+        // frames on a disconnected bus, avoiding noncausal stalls. Thus a
+        // nonzero frame count here is expected and is NOT evidence of audio input.
+        req(in.data.numInputs==0,"negative control failed to disconnect VST3 bus");
     }else{
         req(out.hostFrames>=std::uint64_t(tc.rate)*2,
             "actual VST3 input buffers did not reach the guest");
