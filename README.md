@@ -2,7 +2,11 @@
 
 **Original emulator software: [Tuth / eii-emu](https://github.com/Tuth/eii-emu).** Tuth initiated and maintains the underlying hardware-level Emulator II emulator. This repository supplies a **125A Windows VST3 adaptation** of that project; it is not an official E-mu product. See [CREDITS.md](CREDITS.md) for the original developer and all upstream contributors.
 
-## Current delivery: P047 (19 November 2026)
+## Public P048 release candidate and private P047 delivery (19 November 2026)
+
+**P048 (public):** Windows x64 release-candidate package **without proprietary ROM/OS files**, paired with a complete corresponding-source ZIP, code diff, SHA-256 manifest and original developer credits. See [release notes](RELEASE-NOTES-P048.md), [installation](INSTALL-PUBLIC.md), [change log](CHANGELOG.md) and [source provenance](RELEASE-SOURCE-TRACEABILITY.md). The previously delivered P047 **private** owner ZIP is separate and is not a public downloadable artifact.
+
+**P047 (private owner package):**
 
 - **User-facing product name:** `E-MU Emulator II.vst3` for both the outer Windows bundle and `Contents/x86_64-win/` PE module; the VST3 host sees **E-MU Emulator II**. The pre-existing VST3 processor UID was preserved.
 - **Original Emulator II signal path by default:** SSM2045 filter, native AM6072 DAC stage and S3528 reconstruction. The optional Emulator III CEM3387 Custom path is **not** the default.
