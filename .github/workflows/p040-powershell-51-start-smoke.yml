@@ -32,3 +32,24 @@ jobs:
           if($output -match 'ParameterArgumentValidationErrorEmptyStringNotAllowed') { throw 'Original P040 empty Path bug persists' }
           Write-Host 'P040 REAL WINDOWS POWERSHELL 5.1 SCRIPT PATH AND NO-ROM FAIL-CLOSED SMOKE: PASS'
           $global:LASTEXITCODE=0
+      - name: Smoke the one-click CMD starter and live output logging
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $env:P040_CI='1'
+          & cmd.exe /d /c 'call tools\START-P040-TEST.bat'
+          $code=$LASTEXITCODE
+          $path='tools/P040-TEST-ERGEBNIS.txt'
+          if (!(Test-Path -LiteralPath $path)) { throw 'P040 batch failed to write result log' }
+          $log=Get-Content -LiteralPath $path -Raw
+          Write-Host ('Batch process exit code: '+$code)
+          if ($code -eq 0) { throw 'P040 one-click batch falsely passed with no VST3' }
+          if ($log -notmatch 'P040 SCRIPT_DIR ') { throw 'P040 batch did not pass script location' }
+          if ($log -notmatch 'P040 actual Windows VST3 COM test executable missing') {
+            throw 'P040 one-click batch never reached the expected no-media preflight'
+          }
+          if ($log -notmatch 'P040 BAT exit_code=') { throw 'P040 one-click batch exit status missing' }
+          if ($log -match 'ParameterArgumentValidationErrorEmptyStringNotAllowed|Supply values for the following parameters') {
+            throw 'P040 one-click batch has the old broken PowerShell argument handling'
+          }
+          Write-Host 'P040 START-P040-TEST.bat REAL WINDOWS CMD LIVE-LOGGING SMOKE: PASS'
