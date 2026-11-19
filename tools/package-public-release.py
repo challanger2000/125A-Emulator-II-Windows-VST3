@@ -136,7 +136,29 @@ def source_archive(output: Path, inputs: list[tuple[Path, str]]) -> None:
         "125a_build_commit": git("rev-parse", "HEAD"),
         "source_files": [],
     }
+    # Exact pinned-upstream to 125A modifications for traceable distribution.
+    upstream_diff = subprocess.check_output(
+        ["git", "-C", str(UP), "diff", "--no-ext-diff", "--binary", "HEAD", "--"],
+        cwd=ROOT,
+    )
+    if not upstream_diff:
+        raise RuntimeError("No upstream diff: 125A patch application may have been skipped")
+    tracked_raw = subprocess.check_output(
+        ["git", "-C", str(UP), "ls-files", "-z"], cwd=ROOT
+    )
+    tracked_upstream = {p.decode("utf-8") for p in tracked_raw.split(b"\0") if p}
+    additions = sorted(
+        rel[len("upstream/eii-emu/"):]
+        for _, rel in inputs
+        if rel.startswith("upstream/eii-emu/")
+        and rel[len("upstream/eii-emu/"):] not in tracked_upstream
+    )
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED, compresslevel=8) as z:
+        z.writestr(f"{SOURCE_PREFIX}/UPSTREAM-125A-CHANGES.patch", upstream_diff)
+        z.writestr(
+            f"{SOURCE_PREFIX}/UPSTREAM-125A-ADDED-SOURCE-FILES.txt",
+            "\n".join(additions) + "\n",
+        )
         for path, relative in inputs:
             data = path.read_bytes()
             manifest["source_files"].append({"path": relative, "sha256": sha256(data), "size": len(data)})
