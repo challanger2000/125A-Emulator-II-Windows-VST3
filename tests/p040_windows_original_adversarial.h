@@ -21,6 +21,7 @@ struct P040Case {
     int rate=48000;
     int inputHz=1000; // 0 = connected digital silence
     bool disconnected=false;
+    bool native=false; // P044 additionally tests genuine switched DAC/deglitch (P040 stays OFF)
 };
 struct P040Metrics {
     double amp1000=0,amp500=0,peak=0,rms=0;
@@ -60,7 +61,7 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
     state=replaceKey(state,"autoboot","1");
     state=replaceKey(state,"wavmidic3","1"); // host C3/60 -> original firmware MIDI48
     state=replaceKey(state,"model","5");
-    state=replaceKey(state,"native","0");
+    state=replaceKey(state,"native",tc.native?"1":"0");
     state=replaceKey(state,"s3528","1");
     req(in.setState(eii::portable::encodeProject(state,initial.bank,initial.hdd)),
         "invalid original ROM/OS/Choir host project state");
@@ -81,6 +82,17 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
         Sleep(75);
     }
     req(ready,"original firmware did not boot to Pxx");
+    if(tc.native) {
+        req(in.status("appliednative")=="1",
+            "P044 native=1 requested but appliednative is "+in.status("appliednative"));
+        req(in.status("applieds3528")=="1",
+            "P044 S3528=1 requested but applieds3528 is "+in.status("applieds3528"));
+        std::cout<<"P044 "<<tc.name<<" GENUINE ORIGINAL OS BOOT"
+                 <<" appliedmodel="<<in.status("appliedmodel")
+                 <<" appliednative="<<in.status("appliednative")
+                 <<" applieds3528="<<in.status("applieds3528")
+                 <<"\n"<<std::flush;
+    }
     req(in.status("wavactive")=="0","unexpected WAV importer is active");
     const std::uint64_t startReads=p038Count(in,"samplereads");
     const std::uint64_t startReport=p038Count(in,"wavreport");
@@ -228,6 +240,16 @@ static P040Metrics p040OwnerCase(const VST3::Hosting::PluginFactory& factory,
              <<" amp1000="<<out.amp1000<<" peak="<<out.peak
              <<" rms="<<out.rms<<" bank_snapshot="<<out.storedInProject
              <<"\n"<<std::flush;
+    if(tc.native){
+        req(in.status("appliednative")=="1","P044 native DSP route was lost during capture and audition");
+        req(in.status("applieds3528")=="1","P044 reconstruction path was lost during capture and audition");
+        std::cout<<"P044 "<<tc.name<<" COMPLETE original_capture=1 bank_snapshot="
+                 <<out.storedInProject<<" appliednative="<<in.status("appliednative")
+                 <<" applieds3528="<<in.status("applieds3528")
+                 <<" amp500="<<out.amp500<<" amp1000="<<out.amp1000
+                 <<" rms="<<out.rms<<" peak="<<out.peak
+                 <<"\n"<<std::flush;
+    }
     in.shutdown();
     req(eiiThreads()==0,"Windows original firmware worker thread leak");
     return out;
