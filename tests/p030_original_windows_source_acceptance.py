@@ -7,6 +7,15 @@ p=Path(__file__).resolve().parents[1]
 s=(p/"upstream/eii-emu/tools/vst3_host_test.cpp").read_text(encoding="utf-8")
 for key in (
  'std::string(argv[5])=="original-windows-audio"',
+ 'std::string(argv[5])=="original-windows-binary-recall"',
+ 'const auto decoded=decodeProject(stored);',
+ 'check(!second.setState(damaged)',
+ 'check(second.getState()==stored',
+ 'auto original=eii::portable::decodeProject(in.getState());',
+ 'configured=eii::portable::encodeProject(settings,original.bank,original.hdd);',
+ 'const auto original=eii::portable::decodeProject(restored);',
+ 'configured=restored; // strict, byte-for-byte host project recall',
+ 'const auto decoded=eii::portable::decodeProject(*saved);',
  'std::string(argv[5])=="original-windows-negative"',
  'in.create(factory,cid,host)',
  'in.setState(configured)',
