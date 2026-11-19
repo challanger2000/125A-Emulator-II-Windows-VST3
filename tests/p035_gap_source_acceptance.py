@@ -13,7 +13,7 @@ p=importlib.util.module_from_spec(s);s.loader.exec_module(p)
 
 for token in (
     "std::uint8_t gap=0;",
-    "only the consumer resets its parser",
+    "Only the consumer resets its parser",
 ):
     assert token in BYTES,token
 for token in (
