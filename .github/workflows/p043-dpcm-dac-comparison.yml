@@ -1,0 +1,41 @@
+name: P043 DAC route A-B (Linux, no ROM and no Windows build)
+on:
+  push:
+    branches: [main]
+    paths:
+      - tests/p043_dpcm_dac_route_probe.cpp
+      - .github/workflows/p043-dpcm-dac-comparison.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  differential-code-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Verify unchanged pinned original upstream source
+        shell: bash
+        run: |
+          test "$(git -C upstream/eii-emu rev-parse HEAD)" = "e345bcf00af8a066ebace9168cf0b6c3a40ca164"
+      - name: Build only P043 diagnostic (no full plugin/Windows rebuild)
+        shell: bash
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Werror \
+            -Iupstream/eii-emu/src \
+            tests/p043_dpcm_dac_route_probe.cpp -o p043_dac_route_probe
+      - name: Execute 0.7 V differential-coded audio through both original-source pathways
+        shell: bash
+        run: |
+          ./p043_dac_route_probe > p043-dpcm-dac-comparison.csv
+          cat p043-dpcm-dac-comparison.csv
+      - name: Save reproducible numeric output
+        uses: actions/upload-artifact@v4
+        with:
+          name: P043-ROM-FREE-DPCM-DAC-ROUTE-COMPARISON-96K-192K
+          path: p043-dpcm-dac-comparison.csv
+          if-no-files-found: error
+          retention-days: 30
