@@ -599,9 +599,9 @@ jobs:
         shell: pwsh
         run: |
           $source = Get-Content 'tests/p049_windows_original_recall.h' -Raw
-          if ($source -notmatch 'p049AwaitOriginalBoot\\(first,"BEFORE"\\)' -or
-              $source -notmatch 'p049AwaitOriginalBoot\\(second,"AFTER"\\)' -or
-              $source -notmatch 'in.ready\\(\\) && in.status\\("loaded"\\)=="1"') {
+          if (-not $source.Contains('p049AwaitOriginalBoot(first,"BEFORE")') -or
+              -not $source.Contains('p049AwaitOriginalBoot(second,"AFTER")') -or
+              -not $source.Contains('in.ready() && in.status("loaded")=="1"')) {
              throw "P049 must wait on the actual original-firmware owner thread before using bootAndPlay"
           }
           Write-Host 'P049 owner-thread boot/wait contract PASS'
