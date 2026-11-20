@@ -478,6 +478,10 @@ jobs:
           python tools/apply-p044-native-original-windows-matrix.py --verify
           if ($LASTEXITCODE -ne 0) { throw "P044 original native VST3 host matrix anchors failed" }
           python tools/apply-p044-native-original-windows-matrix.py
+          python tools/apply-p049-owner-recall.py --verify
+          if ($LASTEXITCODE -ne 0) { throw "P049 Windows real sample bank recall host preflight failed" }
+          python tools/apply-p049-owner-recall.py
+          if ($LASTEXITCODE -ne 0) { throw "P049 Windows real sample bank recall host patch failed" }
           if ($LASTEXITCODE -ne 0) { throw "P044 original native DAC COM matrix install failed" }
           python tests/p044_native_original_source_acceptance.py
           if ($LASTEXITCODE -ne 0) { throw "P044 private original-ROM native DAC source contract failed" }
@@ -591,6 +595,14 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-negative"
           if ($LASTEXITCODE -ne 0) { throw "P030 synthetic invalid original-ROM negative control failed" }
+      - name: P049 owner-original sample recall must reject missing media on public CI
+        shell: pwsh
+        run: |
+          $bundle="upstream/eii-emu/build/win64-vst3/EmulatorII-Custom.vst3"
+          $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
+          & $probe $bundle "no-original-ROM" "no-original-OS" "no-sample-bank" "original-windows-p049-audio-recall" "unused"
+          if ($LASTEXITCODE -ne 3) { throw "P049 false positive: private original firmware and sample bank missing" }
+          exit 0
       - name: Verify P031 checksummed binary song media and fresh actual Windows VST3 recall
         shell: pwsh
         run: |
