@@ -4,6 +4,7 @@
 #pragma once
 #include <filesystem>
 #include <chrono>
+#include <thread>
 #include <stdexcept>
 #include <iostream>
 #include <string>
@@ -11,6 +12,48 @@
 #include <algorithm>
 #include <tuple>
 #include <array>
+
+
+// The original OS boots on its independent emulation-owner thread. VST3
+// process() callbacks do NOT advance that worker by a whole guest clock step.
+// Wait for actual original LCD preset Pxx and verified loaded bank, exactly as
+// the previously passing original-ROM Windows P044 host acceptance does.
+// In particular, never mistake fast offline block submission for guest boot.
+static void p049AwaitOriginalBoot(Instance& in,const char* phase) {
+    using Clock=std::chrono::steady_clock;
+    const auto started=Clock::now();
+    auto nextNotice=started+std::chrono::seconds(10);
+    std::cout<<"P049 "<<phase<<" original_firmware_boot=START\n"<<std::flush;
+    while(Clock::now()-started<std::chrono::seconds(240)) {
+        const auto error=in.status("error");
+        if(!error.empty())
+            throw std::runtime_error(std::string("P049 ")+phase+
+                " original firmware boot error: "+error);
+        if(in.ready() && in.status("loaded")=="1") {
+            std::cout<<"P049 "<<phase<<" original_firmware_boot=READY"
+                <<" lcd0="<<in.status("lcd0")
+                <<" loaded="<<in.status("loaded")
+                <<" ticks="<<in.status("ticks")<<"\n"<<std::flush;
+            return;
+        }
+        if(Clock::now()>=nextNotice) {
+            const auto seconds=std::chrono::duration_cast<std::chrono::seconds>(
+                Clock::now()-started).count();
+            std::cout<<"P049 "<<phase<<" original_firmware_boot=RUNNING"
+                <<" seconds="<<seconds
+                <<" lcd0="<<in.status("lcd0")
+                <<" lcd1="<<in.status("lcd1")
+                <<" loaded="<<in.status("loaded")
+                <<" ticks="<<in.status("ticks")<<"\n"<<std::flush;
+            nextNotice=Clock::now()+std::chrono::seconds(10);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(75));
+    }
+    throw std::runtime_error(std::string("P049 ")+phase+
+        " original firmware did not reach a loaded Pxx preset display; lcd0="+
+        in.status("lcd0")+" lcd1="+in.status("lcd1")+
+        " loaded="+in.status("loaded")+" ticks="+in.status("ticks"));
+}
 
 static int p049OriginalChoirRecall(const VST3::Hosting::PluginFactory& factory,
       const VST3::UID& cid,FUnknown* host,const std::string& rom,
@@ -54,6 +97,7 @@ static int p049OriginalChoirRecall(const VST3::Hosting::PluginFactory& factory,
          require(first.setState(eii::portable::encodeProject(settings,initial.bank,initial.hdd)),
                  "setState rejected actual sample disk");
          require(first.start(48000,kOffline,512),"first VST3 processor setup failed");
+         p049AwaitOriginalBoot(first,"BEFORE");
          before=bootAndPlay(first,w1);
          require(before.booted,"original firmware did not reach preset display");
          require(before.level>0.0002,"sample bank produced no usable MIDI audio");
@@ -94,6 +138,7 @@ static int p049OriginalChoirRecall(const VST3::Hosting::PluginFactory& factory,
          require(second.create(factory,cid,host),"fresh VST3 instance creation failed");
          require(second.setState(project),"fresh VST3 rejected persisted DAW state");
          require(second.start(48000,kOffline,512),"restored VST3 processor setup failed");
+         p049AwaitOriginalBoot(second,"AFTER");
          after=bootAndPlay(second,w2);
          require(after.booted,"fresh VST3 failed to boot without external sample floppy");
          require(after.level>0.0002,"restored sample bank silent");
