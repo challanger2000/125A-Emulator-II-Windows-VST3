@@ -23,7 +23,7 @@ static void p049AwaitOriginalBoot(Instance& in,const char* phase) {
     using Clock=std::chrono::steady_clock;
     const auto started=Clock::now();
     auto nextNotice=started+std::chrono::seconds(10);
-    std::cout<<"P049 "<<phase<<" original_firmware_boot=START\\n"<<std::flush;
+    std::cout<<"P049 "<<phase<<" original_firmware_boot=START\n"<<std::flush;
     while(Clock::now()-started<std::chrono::seconds(240)) {
         const auto error=in.status("error");
         if(!error.empty())
@@ -33,7 +33,7 @@ static void p049AwaitOriginalBoot(Instance& in,const char* phase) {
             std::cout<<"P049 "<<phase<<" original_firmware_boot=READY"
                 <<" lcd0="<<in.status("lcd0")
                 <<" loaded="<<in.status("loaded")
-                <<" ticks="<<in.status("ticks")<<"\\n"<<std::flush;
+                <<" ticks="<<in.status("ticks")<<"\n"<<std::flush;
             return;
         }
         if(Clock::now()>=nextNotice) {
@@ -44,7 +44,7 @@ static void p049AwaitOriginalBoot(Instance& in,const char* phase) {
                 <<" lcd0="<<in.status("lcd0")
                 <<" lcd1="<<in.status("lcd1")
                 <<" loaded="<<in.status("loaded")
-                <<" ticks="<<in.status("ticks")<<"\\n"<<std::flush;
+                <<" ticks="<<in.status("ticks")<<"\n"<<std::flush;
             nextNotice=Clock::now()+std::chrono::seconds(10);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(75));
