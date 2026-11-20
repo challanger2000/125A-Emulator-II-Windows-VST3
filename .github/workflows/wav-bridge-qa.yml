@@ -595,6 +595,16 @@ jobs:
           $probe="upstream/eii-emu/build/win64-vst3/vst3_host_test.exe"
           & $probe $bundle "unused" "unused" "unused" "original-windows-negative"
           if ($LASTEXITCODE -ne 0) { throw "P030 synthetic invalid original-ROM negative control failed" }
+      - name: P049 original-firmware boot wait static regression
+        shell: pwsh
+        run: |
+          $source = Get-Content 'tests/p049_windows_original_recall.h' -Raw
+          if ($source -notmatch 'p049AwaitOriginalBoot\\(first,"BEFORE"\\)' -or
+              $source -notmatch 'p049AwaitOriginalBoot\\(second,"AFTER"\\)' -or
+              $source -notmatch 'in.ready\\(\\) && in.status\\("loaded"\\)=="1"') {
+             throw "P049 must wait on the actual original-firmware owner thread before using bootAndPlay"
+          }
+          Write-Host 'P049 owner-thread boot/wait contract PASS'
       - name: P049 owner-original sample recall must reject missing media on public CI
         shell: pwsh
         run: |
